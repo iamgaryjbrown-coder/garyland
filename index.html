@@ -67,6 +67,12 @@ input[type="range"]{accent-color:#d4a853}
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center}
+.welcome-bg{background:url('bg.png') center center/cover no-repeat;position:fixed;inset:0;z-index:0}
+.welcome-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px}
+.cat-stack{display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px}
+.cat-stack .btn{width:100%;padding:16px 20px;font-size:15px;text-align:center;background:rgba(15,14,12,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(212,168,83,0.3)}
+.cat-stack .btn.active{background:rgba(212,168,83,0.2);border:2px solid #d4a853}
+.prefs-panel{background:rgba(15,14,12,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:20px;padding:20px;margin-top:20px;width:100%;max-width:320px;border:1px solid rgba(42,40,38,0.6)}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
 .flex-wrap-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
@@ -203,24 +209,25 @@ function render(){
 
 function renderWelcome(){
   const cat=CATS.find(c=>c.id===S.cat);
-  let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div><h1 class="h1">🪲 GaryLand</h1><p class="sub">The Brown family's AI-powered place finder</p></div>
-  </div>
-  <div style="margin-top:28px"><p class="label">What are we looking for?</p>
-  <div class="flex-wrap">${CATS.map(c=>`<button class="btn ${S.cat===c.id?"active":""}" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}</div></div>`;
+  let h=`<div class="welcome-bg"></div><div class="welcome-content">
+    <div class="cat-stack">
+      ${CATS.map(c=>`<button class="btn ${S.cat===c.id?"active":""}" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
+    </div>`;
   if(cat){
-    h+=`<div style="margin-top:24px;animation:fade-up 0.3s ease"><p class="label">Preferences</p>
-    <div class="flex-wrap-tight">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>`;
+    h+=`<div class="prefs-panel" style="animation:fade-up 0.3s ease">
+      <p class="label" style="text-align:center">Preferences</p>
+      <div class="flex-wrap-tight" style="justify-content:center">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>`;
     if(cat.needsSun){
-      h+=`<div class="sun-panel"><p class="sun-label">☀️ Sun check for</p>
+      h+=`<div class="sun-panel" style="border:none;padding:12px 0 0;background:transparent"><p class="sun-label">☀️ Sun check for</p>
       <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px">
       <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
       <span id="tv" class="time-val">${timeStr()}</span></div></div>`;
     }
-    h+=`<div style="margin-top:20px"><input class="input" id="li" value="${esc(S.loc)}" placeholder="Where? e.g. Shoreditch, Tenerife, Southbank..." oninput="S.loc=this.value"></div>
-    <button class="btn active full" style="margin-top:16px" onclick="doSearch()">🪲 Find places</button></div>`;
+    h+=`<div style="margin-top:16px;width:100%"><input class="input" id="li" value="${esc(S.loc)}" placeholder="Where? e.g. Shoreditch, Tenerife..." oninput="S.loc=this.value"></div>
+    <button class="btn active full" style="margin-top:12px" onclick="doSearch()">🪲 Find places</button></div>`;
   }
+  h+=`</div>`;
   app.innerHTML=h;
 }
 
