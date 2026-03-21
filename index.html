@@ -66,11 +66,12 @@ input[type="range"]{accent-color:#d4a853}
 .chat-input-bar{padding:12px 16px;border-top:1px solid #2a2826;display:flex;gap:8px}
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
-.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0e0c;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
+.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0e0c;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
 .cat-stack{display:flex;flex-direction:column;gap:10px;width:280px}
 .cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center}
-.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(20px,env(safe-area-inset-top,20px)) max(32px,env(safe-area-inset-right,32px)) max(20px,env(safe-area-inset-bottom,20px)) max(32px,env(safe-area-inset-left,32px))}
+.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:env(safe-area-inset-top,20px) 32px env(safe-area-inset-bottom,20px) 32px}
+.prefs-screen::before,.prefs-screen::after{content:'';flex:1 0 0px}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
 .flex-wrap-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
@@ -220,7 +221,7 @@ function renderWelcome(){
   }
 
   // Screen 2: Preferences + location on black bg
-  let h=`<div class="prefs-screen"><div style="width:280px;margin:auto 0">
+  let h=`<div class="prefs-screen"><div style="width:280px">
     <button class="back-btn" style="display:block" onclick="S.cat=null;S.prefs=[];render()">← ${cat.icon} ${cat.label}</button>
     <p class="label" style="text-align:center;margin-top:16px">Preferences</p>
     <div class="flex-wrap-tight" style="justify-content:center;margin-top:8px">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>`;
