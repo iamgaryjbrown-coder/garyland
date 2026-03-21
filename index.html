@@ -7,14 +7,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{overflow:hidden;height:100%}
-body{background:#0f0e0c;color:#e8e2d6;font-family:'DM Sans',sans-serif;height:100%;overflow:hidden;margin:0}
+html{overflow:hidden;height:100%;width:100%;position:fixed}
+body{background:#0f0e0c;color:#e8e2d6;font-family:'DM Sans',sans-serif;height:100%;width:100%;overflow:hidden;margin:0;position:fixed}
 input::placeholder{color:#5a5548}
 ::-webkit-scrollbar{width:6px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2a2826;border-radius:3px}
 @keyframes beetle-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-.page{max-width:480px;margin:0 auto;padding:20px 16px;height:100vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.page{max-width:480px;margin:0 auto;height:100%;overflow:hidden;position:relative}
 .h1{font-family:'Fraunces',serif;font-size:28px;font-weight:800;color:#d4a853;letter-spacing:-0.5px}
 .h2{font-family:'Fraunces',serif;font-size:20px;font-weight:800;color:#d4a853}
 .sub{font-size:13px;color:#8a8478;margin-top:4px;font-style:italic}
@@ -66,14 +66,14 @@ input[type="range"]{accent-color:#d4a853}
 .chat-input-bar{padding:12px 16px;border-top:1px solid #2a2826;display:flex;gap:8px}
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
-.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center;touch-action:none}
 .welcome-bg{background:url('bg.png') center center/cover no-repeat;position:fixed;inset:0;z-index:0}
-.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:20vh;overflow:hidden}
+.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:20vh;overflow:hidden;touch-action:none}
 .cat-stack{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
 .cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center;background:rgba(15,14,12,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(212,168,83,0.3);color:#e8e2d6}
 .cat-stack .btn.active{background:rgba(15,14,12,0.9);border:2px solid #d4a853;color:#d4a853}
 .prefs-panel{background:rgba(15,14,12,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:20px;padding:20px;margin-top:16px;width:100%;max-width:300px;border:1px solid rgba(42,40,38,0.6)}
-.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;overflow:hidden}
+.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;overflow:hidden;touch-action:none}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
 .flex-wrap-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
@@ -253,10 +253,11 @@ function renderLoading(){
 
 function renderResults(){
   const q=S.query;
-  let h=`<button class="back-btn" onclick="goBack()">← Back to search</button>
+  let h=`<div style="position:fixed;inset:0;background:#0f0e0c;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:10"><div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <button class="back-btn" onclick="goBack()">← Back to search</button>
     <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
     <p style="font-size:13px;color:#6a645a;margin-bottom:20px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>
-    <div style="display:flex;flex-direction:column;gap:16px">`;
+    <div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px">`;
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
     h+=`<div class="card" style="animation-delay:${i*0.08}s">
@@ -268,7 +269,7 @@ function renderResults(){
       ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
       <button class="btn" style="width:100%;margin-top:12px" onclick="openChat(${i})">💬 Tell me more</button></div></div>`;
   });
-  h+=`</div>`;
+  h+=`</div></div></div>`;
   app.innerHTML=h;
   S.results.places.forEach((p,i)=>loadCardPhotos(i,p.name,p.address));
 }
@@ -399,6 +400,17 @@ async function doSearch(){
     S.error=e.message;S.searching=false;renderLoading();
   }
 }
+
+// Block iOS rubber-band scroll except inside scrollable results
+document.addEventListener('touchmove',function(e){
+  let el=e.target;
+  while(el&&el!==document.body){
+    const s=window.getComputedStyle(el);
+    if(s.overflowY==='auto'||s.overflowY==='scroll')return;
+    el=el.parentElement;
+  }
+  e.preventDefault();
+},{passive:false});
 
 // ── Boot ──
 render();
