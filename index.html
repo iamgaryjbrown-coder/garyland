@@ -7,14 +7,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{overflow-x:hidden;width:100%;position:relative}
-body{background:#0f0e0c;color:#e8e2d6;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;width:100%;max-width:100vw;position:relative}
+html{overflow:hidden;height:100%}
+body{background:#0f0e0c;color:#e8e2d6;font-family:'DM Sans',sans-serif;height:100%;overflow:hidden;margin:0}
 input::placeholder{color:#5a5548}
 ::-webkit-scrollbar{width:6px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2a2826;border-radius:3px}
 @keyframes beetle-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-.page{max-width:480px;margin:0 auto;padding:20px 16px;min-height:100vh;overflow-x:hidden}
+.page{max-width:480px;margin:0 auto;padding:20px 16px;height:100vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .h1{font-family:'Fraunces',serif;font-size:28px;font-weight:800;color:#d4a853;letter-spacing:-0.5px}
 .h2{font-family:'Fraunces',serif;font-size:20px;font-weight:800;color:#d4a853}
 .sub{font-size:13px;color:#8a8478;margin-top:4px;font-style:italic}
@@ -259,8 +259,8 @@ function renderResults(){
 // ═══════════════════════════════════════
 // Lightbox
 let lbCard=null,lbIdx=0;
-function openLightbox(card,idx){lbCard=card;lbIdx=idx;document.body.style.overflow="hidden";renderLightbox();}
-function closeLightbox(){lbCard=null;document.body.style.overflow="";document.getElementById("lb")?.remove();}
+function openLightbox(card,idx){lbCard=card;lbIdx=idx;renderLightbox();}
+function closeLightbox(){lbCard=null;document.getElementById("lb")?.remove();}
 function lbPrev(){const urls=cardPhotos[lbCard];if(!urls)return;lbIdx=(lbIdx-1+urls.length)%urls.length;renderLightbox();}
 function lbNext(){const urls=cardPhotos[lbCard];if(!urls)return;lbIdx=(lbIdx+1)%urls.length;renderLightbox();}
 function renderLightbox(){
@@ -318,7 +318,7 @@ function closeChat(){S.chatPlace=null;document.getElementById("co")?.remove();}
 // ═══════════════════════════════════════
 function pickCat(id){S.cat=id;S.prefs=[];render();}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
-function goBack(){clearInterval(S.loadInterval);S.loadInterval=null;S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;document.body.style.overflow="";render();}
+function goBack(){clearInterval(S.loadInterval);S.loadInterval=null;S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;render();}
 
 async function doSearch(){
   if(S.searching)return;
@@ -330,7 +330,6 @@ async function doSearch(){
   S.searching=true;
   const q={cat,prefs:[...S.prefs],loc:S.loc,sun:cat.needsSun?{date:S.date,time:timeStr()}:null};
   S.query=q;S.screen="loading";S.error=null;S.loadMsgIdx=0;
-  document.body.style.overflow="hidden";
   clearInterval(S.loadInterval);S.loadInterval=null;render();
 
   let sunCtx="";
@@ -347,7 +346,7 @@ async function doSearch(){
     const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
     if(!parsed.places?.length)throw new Error("No places found");
     clearInterval(S.loadInterval);S.loadInterval=null;
-    S.results=parsed;S.screen="results";S.searching=false;document.body.style.overflow="";render();
+    S.results=parsed;S.screen="results";S.searching=false;render();
   }catch(e){
     clearInterval(S.loadInterval);S.loadInterval=null;
     S.error=e.message;S.searching=false;renderLoading();
