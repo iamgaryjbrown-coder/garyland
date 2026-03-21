@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🪲 GaryLand</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden;width:100%;position:relative}
+body{background:#0f0e0c;color:#e8e2d6;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;width:100%;max-width:100vw;position:relative}
+input::placeholder{color:#5a5548}
+::-webkit-scrollbar{width:6px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2a2826;border-radius:3px}
+@keyframes beetle-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.page{max-width:480px;margin:0 auto;padding:20px 16px;min-height:100vh;overflow-x:hidden}
+.h1{font-family:'Fraunces',serif;font-size:28px;font-weight:800;color:#d4a853;letter-spacing:-0.5px}
+.h2{font-family:'Fraunces',serif;font-size:20px;font-weight:800;color:#d4a853}
+.sub{font-size:13px;color:#8a8478;margin-top:4px;font-style:italic}
+.label{font-size:13px;color:#8a8478;font-weight:600;margin-bottom:8px}
+.btn{padding:10px 20px;border-radius:24px;border:1px solid #2a2826;background:#1a1917;color:#8a8478;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.btn.active{border:2px solid #d4a853;background:rgba(212,168,83,0.09);color:#d4a853}
+.btn.full{width:100%;font-size:15px;padding:14px 0}
+.btn.full:disabled{opacity:0.4;cursor:default}
+.chip{padding:6px 14px;border-radius:20px;border:1px solid #2a2826;background:transparent;color:#6a645a;font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif}
+.chip.on{border:1.5px solid #d4a853;background:rgba(212,168,83,0.12);color:#d4a853;font-weight:600}
+.input{width:100%;padding:12px 16px;border-radius:12px;border:1px solid #2a2826;background:#1a1917;color:#e8e2d6;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+.card{background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid #2a2826;animation:fade-up 0.4s ease both;max-width:100%}
+.card-head{padding:14px 14px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.card-name{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:#e8e2d6}
+.card-addr{font-size:12px;color:#6a645a;margin-top:2px}
+.card-body{padding:4px 14px 14px}
+.card-summary{font-size:13px;color:#a09a8e;margin-top:8px;line-height:1.5}
+.sun-verdict{font-size:12px;color:#fbbf24;margin-top:8px;padding:6px 10px;background:rgba(251,191,36,0.06);border-radius:8px}
+.tag{padding:3px 10px;border-radius:12px;background:rgba(212,168,83,0.08);color:#d4a853;font-size:11px;font-weight:500;display:inline-block}
+.badge{font-size:13px;font-weight:700;padding:3px 8px;border-radius:8px}
+.badge-high{background:rgba(45,212,191,0.13);color:#2dd4bf}
+.badge-mid{background:rgba(212,168,83,0.13);color:#d4a853}
+.badge-low{background:rgba(229,115,115,0.13);color:#e57373}
+.photo-strip{display:flex;gap:6px;overflow-x:auto;padding:12px 12px 8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.photo-strip img{height:130px;min-width:160px;max-width:220px;object-fit:cover;border-radius:8px;scroll-snap-align:start;flex-shrink:0;cursor:pointer;transition:opacity 0.15s}
+.photo-strip img:active{opacity:0.7}
+.photo-shimmer{height:130px;min-width:160px;border-radius:8px;flex-shrink:0;background:linear-gradient(90deg,#1a1917 25%,#2a2826 50%,#1a1917 75%);background-size:200% 100%;animation:shimmer 1.5s ease-in-out infinite}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:2000;display:flex;align-items:center;justify-content:center;touch-action:none}
+.lightbox img{max-width:92vw;max-height:85vh;object-fit:contain;border-radius:8px}
+.lb-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#e8e2d6;font-size:28px;cursor:pointer;z-index:2001;padding:8px}
+.lb-prev,.lb-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(26,25,23,0.7);border:1px solid #2a2826;color:#d4a853;font-size:22px;cursor:pointer;padding:12px 14px;border-radius:50%;z-index:2001}
+.lb-prev{left:12px}
+.lb-next{right:12px}
+.lb-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#8a8478;font-size:13px}
+.sun-panel{margin-top:20px;padding:16px;background:#1a1917;border-radius:12px;border:1px solid #2a2826}
+.sun-label{font-size:12px;color:#d4a853;font-weight:600;margin-bottom:10px}
+input[type="range"]{accent-color:#d4a853}
+.time-val{font-size:14px;color:#d4a853;font-weight:700;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+.chat-overlay{position:fixed;inset:0;background:rgba(15,14,12,0.96);z-index:1000;display:flex;flex-direction:column}
+.chat-header{padding:14px 16px;border-bottom:1px solid #2a2826;display:flex;justify-content:space-between;align-items:center}
+.chat-header h3{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#d4a853}
+.chat-header p{font-size:11px;color:#6a645a}
+.chat-close{background:none;border:none;color:#8a8478;font-size:22px;cursor:pointer}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat-empty{color:#5a5548;font-size:13px;text-align:center;margin-top:40px}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;white-space:pre-wrap}
+.chat-user{align-self:flex-end;background:rgba(212,168,83,0.14);color:#d4a853;border:1px solid rgba(212,168,83,0.25)}
+.chat-bot{align-self:flex-start;background:#1a1917;color:#c8c2b6;border:1px solid #2a2826}
+.chat-input-bar{padding:12px 16px;border-top:1px solid #2a2826;display:flex;gap:8px}
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center}
+.flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
+.flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
+.flex-wrap-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.back-btn{background:none;border:none;color:#8a8478;cursor:pointer;font-size:13px;padding:0;margin-bottom:12px;font-family:'DM Sans',sans-serif}
+.gear-btn{background:none;border:none;font-size:20px;cursor:pointer;color:#5a5548;padding:4px}
+.key-warn{font-size:11px;color:#e57373;margin-top:6px}
+.key-ok{font-size:11px;color:#2dd4bf;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app" class="page"></div>
+<script>
+// ═══════════════════════════════════════
+// CONFIG — fill these in once
+// ═══════════════════════════════════════
+const WORKER_URL = "https://garyland-api.garyland.workers.dev";
+const GOOGLE_KEY = "AIzaSyCTUs24auwcikig1MDHuJFcPAKRUj3WajQ";
+
+// ── SunCalc ──
+const PI=Math.PI,RAD=PI/180,DAY_MS=864e5,J1970=2440588,J2000=2451545,obliq=RAD*23.4397;
+const toJulian=d=>d.valueOf()/DAY_MS-0.5+J1970,toDays=d=>toJulian(d)-J2000;
+const rightAsc=(l,b)=>Math.atan2(Math.sin(l)*Math.cos(obliq)-Math.tan(b)*Math.sin(obliq),Math.cos(l));
+const declin=(l,b)=>Math.asin(Math.sin(b)*Math.cos(obliq)+Math.cos(b)*Math.sin(obliq)*Math.sin(l));
+const azFn=(H,phi,dec)=>Math.atan2(Math.sin(H),Math.cos(H)*Math.sin(phi)-Math.tan(dec)*Math.cos(phi));
+const altFn=(H,phi,dec)=>Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
+const siderealTime=(d,lw)=>RAD*(280.16+360.9856235*d)-lw;
+const solarMeanAnomaly=d=>RAD*(357.5291+0.98560028*d);
+const eclipticLong=M=>{const C=RAD*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M));return M+C+RAD*102.9372+PI;};
+const sunCoords=d=>{const M=solarMeanAnomaly(d),L=eclipticLong(M);return{dec:declin(L,0),ra:rightAsc(L,0)};};
+function getSunPosition(date,lat,lng){const lw=RAD*-lng,phi=RAD*lat,d=toDays(date),c=sunCoords(d),H=siderealTime(d,lw)-c.ra;return{azimuth:azFn(H,phi,c.dec)/RAD+180,altitude:altFn(H,phi,c.dec)/RAD};}
+
+// ── Data ──
+const CATS=[
+  {id:"sun_drink",icon:"🍺",label:"Drink in Sun",needsSun:true,chips:["Cask ales","Craft beer","Wine bar","Cocktails","Dog-friendly","Big garden","Riverside","Rooftop"]},
+  {id:"sun_eat",icon:"🍽️",label:"Eat in Sun",needsSun:true,chips:["Pub food","Fine dining","Brunch","Pizza","Seafood","Veggie-friendly","Dog-friendly","Terrace"]},
+  {id:"pub",icon:"🍻",label:"Great Pub",needsSun:false,chips:["Cask ales","Craft beer","Cosy","Live music","Dog-friendly","Quiz night","Real fire","Good food"]},
+  {id:"eat",icon:"🥘",label:"Great Restaurant",needsSun:false,chips:["Italian","Indian","Japanese","British","Mexican","Thai","Michelin","Cheap & cheerful"]},
+  {id:"stay",icon:"🏨",label:"Somewhere to Stay",needsSun:false,chips:["Boutique","Budget","Luxury","Countryside","Dog-friendly","Spa","Historic","Family"]},
+];
+const LOAD_MSGS={
+  sun:["Calculating sun angles...","Checking shadow patterns...","Finding sunny terraces...","Rating the golden hour potential..."],
+  pub:["Pulling pints of data...","Checking the hand pumps...","Sniffing out real fires...","Asking the regulars..."],
+  eat:["Tasting the reviews...","Checking the specials board...","Interrogating the sommelier...","Reading between the Michelin lines..."],
+  stay:["Fluffing the pillows...","Checking the thread count...","Testing the Wi-Fi...","Rating the breakfast buffer..."],
+};
+const getMsgType=id=>id?.includes("sun")?"sun":id==="pub"?"pub":id==="stay"?"stay":"eat";
+const BEETLE=`<svg width="64" height="64" viewBox="0 0 100 100" style="animation:beetle-bob 2s ease-in-out infinite"><defs><linearGradient id="iri" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2dd4bf"><animate attributeName="stop-color" values="#2dd4bf;#a78bfa;#f472b6;#fbbf24;#2dd4bf" dur="3s" repeatCount="indefinite"/></stop><stop offset="50%" stop-color="#a78bfa"><animate attributeName="stop-color" values="#a78bfa;#f472b6;#fbbf24;#2dd4bf;#a78bfa" dur="3s" repeatCount="indefinite"/></stop><stop offset="100%" stop-color="#f472b6"><animate attributeName="stop-color" values="#f472b6;#fbbf24;#2dd4bf;#a78bfa;#f472b6" dur="3s" repeatCount="indefinite"/></stop></linearGradient></defs><ellipse cx="50" cy="55" rx="28" ry="32" fill="url(#iri)" opacity="0.9"/><line x1="50" y1="23" x2="50" y2="87" stroke="#0f0e0c" stroke-width="1.5" opacity="0.4"/><ellipse cx="50" cy="28" rx="16" ry="12" fill="#1a1917" opacity="0.8"/><circle cx="42" cy="26" r="3" fill="#d4a853" opacity="0.7"/><circle cx="58" cy="26" r="3" fill="#d4a853" opacity="0.7"/><path d="M30 30 Q20 15 15 10" stroke="url(#iri)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M70 30 Q80 15 85 10" stroke="url(#iri)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M24 45 Q10 42 5 38" stroke="#1a1917" stroke-width="1.5" fill="none"/><path d="M76 45 Q90 42 95 38" stroke="#1a1917" stroke-width="1.5" fill="none"/><path d="M24 60 Q8 62 3 60" stroke="#1a1917" stroke-width="1.5" fill="none"/><path d="M76 60 Q92 62 97 60" stroke="#1a1917" stroke-width="1.5" fill="none"/><path d="M28 75 Q15 82 10 85" stroke="#1a1917" stroke-width="1.5" fill="none"/><path d="M72 75 Q85 82 90 85" stroke="#1a1917" stroke-width="1.5" fill="none"/></svg>`;
+
+// ── State ──
+let S={
+  screen:"welcome",
+  cat:null,prefs:[],loc:"",
+  date:new Date().toISOString().slice(0,10),
+  timeIdx:Math.round((new Date().getHours()*60+new Date().getMinutes())/15),
+  results:null,query:null,error:null,
+  chatPlace:null,chatMsgs:[],chatLoading:false,
+  loadMsgIdx:0,loadInterval:null,searching:false
+};
+const app=document.getElementById("app");
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const escBr=s=>esc(s).replace(/\n/g,"<br>");
+function timeStr(){const m=S.timeIdx*15;return`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
+
+// ═══════════════════════════════════════
+// Claude API
+// ═══════════════════════════════════════
+async function callClaude(messages,system){
+  if(!WORKER_URL||WORKER_URL.includes("PASTE")){throw new Error("Worker URL not configured — edit the HTML config section");}
+  const body={model:"claude-sonnet-4-20250514",max_tokens:1000,messages,tools:[{type:"web_search_20250305",name:"web_search"}]};
+  if(system)body.system=system;
+  const r=await fetch(WORKER_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){
+    if(r.status===401)throw new Error("Invalid Anthropic key — check ⚙️");
+    if(r.status===429)throw new Error("Rate limited — wait a moment");
+    throw new Error("API error "+r.status);
+  }
+  const d=await r.json();
+  return d.content?.filter(b=>b.type==="text").map(b=>b.text).join("\n")||"";
+}
+
+// ═══════════════════════════════════════
+// Google Places Photos
+// ═══════════════════════════════════════
+let mapsReady=false,mapsPromise=null,plSvc=null;
+function loadMaps(key){
+  if(mapsReady&&plSvc)return Promise.resolve();
+  if(mapsPromise)return mapsPromise;
+  mapsPromise=new Promise((res,rej)=>{
+    if(window.google?.maps?.places){mapsReady=true;initPl();res();return;}
+    const s=document.createElement("script");
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
+    s.async=true;s.onload=()=>{mapsReady=true;initPl();res();};s.onerror=()=>rej();
+    document.head.appendChild(s);
+  });
+  return mapsPromise;
+}
+function initPl(){const d=document.createElement("div");const m=new google.maps.Map(d,{center:{lat:0,lng:0},zoom:1});plSvc=new google.maps.places.PlacesService(m);}
+function getPhotos(name,addr){
+  return new Promise(res=>{
+    if(!plSvc){res([]);return;}
+    plSvc.findPlaceFromQuery({query:`${name}, ${addr}`,fields:["place_id"]},(r,s)=>{
+      if(s!==google.maps.places.PlacesServiceStatus.OK||!r?.[0]){res([]);return;}
+      plSvc.getDetails({placeId:r[0].place_id,fields:["photos"]},(p,s2)=>{
+        if(s2!==google.maps.places.PlacesServiceStatus.OK||!p?.photos){res([]);return;}
+        res(p.photos.slice(0,5).map(ph=>ph.getUrl({maxWidth:400})));
+      });
+    });
+  });
+}
+let cardPhotos={};
+function loadCardPhotos(i,name,addr){
+  if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return;
+  loadMaps(GOOGLE_KEY).then(()=>getPhotos(name,addr)).then(urls=>{
+    const el=document.getElementById("ph-"+i);
+    if(!el)return;
+    if(!urls.length){el.style.display="none";return;}
+    cardPhotos[i]=urls;
+    el.innerHTML=urls.map((u,j)=>`<img src="${u}" alt="photo" loading="lazy" onclick="openLightbox(${i},${j})">`).join("");
+  }).catch(()=>{const el=document.getElementById("ph-"+i);if(el)el.style.display="none";});
+}
+
+// ═══════════════════════════════════════
+// Render
+// ═══════════════════════════════════════
+function render(){
+  if(S.screen==="welcome")renderWelcome();
+  else if(S.screen==="loading")renderLoading();
+  else if(S.screen==="results")renderResults();
+}
+
+function renderWelcome(){
+  const cat=CATS.find(c=>c.id===S.cat);
+  let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div><h1 class="h1">🪲 GaryLand</h1><p class="sub">The Brown family's AI-powered place finder</p></div>
+  </div>
+  <div style="margin-top:28px"><p class="label">What are we looking for?</p>
+  <div class="flex-wrap">${CATS.map(c=>`<button class="btn ${S.cat===c.id?"active":""}" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}</div></div>`;
+  if(cat){
+    h+=`<div style="margin-top:24px;animation:fade-up 0.3s ease"><p class="label">Preferences</p>
+    <div class="flex-wrap-tight">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>`;
+    if(cat.needsSun){
+      h+=`<div class="sun-panel"><p class="sun-label">☀️ Sun check for</p>
+      <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+      <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
+      <span id="tv" class="time-val">${timeStr()}</span></div></div>`;
+    }
+    h+=`<div style="margin-top:20px"><input class="input" id="li" value="${esc(S.loc)}" placeholder="Where? e.g. Shoreditch, Tenerife, Southbank..." oninput="S.loc=this.value"></div>
+    <button class="btn active full" style="margin-top:16px" onclick="doSearch()">🪲 Find places</button></div>`;
+  }
+  app.innerHTML=h;
+}
+
+function renderLoading(){
+  const msgs=LOAD_MSGS[getMsgType(S.query?.cat?.id)]||LOAD_MSGS.pub;
+  app.innerHTML=`<div class="loading-screen">${BEETLE}
+    <p style="margin-top:20px;font-size:15px;color:${S.error?"#e57373":"#d4a853"};font-weight:600;min-height:24px;max-width:320px;padding:0 16px" id="lm">${S.error||msgs[S.loadMsgIdx%msgs.length]}</p>
+    ${S.error?'<button class="btn active" style="margin-top:16px" onclick="goBack()">← Go Back</button>':""}</div>`;
+  if(!S.error&&!S.loadInterval){
+    S.loadInterval=setInterval(()=>{S.loadMsgIdx++;const el=document.getElementById("lm");if(el)el.textContent=msgs[S.loadMsgIdx%msgs.length];},2200);
+  }
+}
+
+function renderResults(){
+  const q=S.query;
+  let h=`<button class="back-btn" onclick="goBack()">← Back to search</button>
+    <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
+    <p style="font-size:13px;color:#6a645a;margin-bottom:20px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>
+    <div style="display:flex;flex-direction:column;gap:16px">`;
+  S.results.places.forEach((p,i)=>{
+    const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
+    h+=`<div class="card" style="animation-delay:${i*0.08}s">
+      <div class="card-head"><div><div class="card-name">${esc(p.name)}</div><div class="card-addr">${esc(p.address)}</div></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>
+      <div id="ph-${i}" class="photo-strip"><div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div><div class="photo-shimmer" style="width:180px"></div></div>
+      <div class="card-body"><p class="card-summary">${esc(p.summary)}</p>
+      ${p.sun_verdict?`<p class="sun-verdict">☀️ ${esc(p.sun_verdict)}</p>`:""}
+      ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
+      <button class="btn" style="width:100%;margin-top:12px" onclick="openChat(${i})">💬 Tell me more</button></div></div>`;
+  });
+  h+=`</div>`;
+  app.innerHTML=h;
+  S.results.places.forEach((p,i)=>loadCardPhotos(i,p.name,p.address));
+}
+
+// ═══════════════════════════════════════
+// Lightbox
+let lbCard=null,lbIdx=0;
+function openLightbox(card,idx){lbCard=card;lbIdx=idx;document.body.style.overflow="hidden";renderLightbox();}
+function closeLightbox(){lbCard=null;document.body.style.overflow="";document.getElementById("lb")?.remove();}
+function lbPrev(){const urls=cardPhotos[lbCard];if(!urls)return;lbIdx=(lbIdx-1+urls.length)%urls.length;renderLightbox();}
+function lbNext(){const urls=cardPhotos[lbCard];if(!urls)return;lbIdx=(lbIdx+1)%urls.length;renderLightbox();}
+function renderLightbox(){
+  const urls=cardPhotos[lbCard];if(!urls||!urls.length){closeLightbox();return;}
+  let el=document.getElementById("lb");
+  if(!el){el=document.createElement("div");el.id="lb";el.className="lightbox";document.body.appendChild(el);}
+  const multi=urls.length>1;
+  el.innerHTML=`<button class="lb-close" onclick="closeLightbox()">✕</button>
+    ${multi?`<button class="lb-prev" onclick="event.stopPropagation();lbPrev()">‹</button>`:""}<img src="${urls[lbIdx]}" alt="photo">${multi?`<button class="lb-next" onclick="event.stopPropagation();lbNext()">›</button>`:""}
+    ${multi?`<div class="lb-counter">${lbIdx+1} / ${urls.length}</div>`:""}`;
+  el.onclick=e=>{if(e.target===el)closeLightbox();};
+  // Swipe support — preventDefault stops Safari back-gesture
+  let tx=0;
+  el.ontouchstart=e=>{e.preventDefault();tx=e.touches[0].clientX;};
+  el.ontouchmove=e=>{e.preventDefault();};
+  el.ontouchend=e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50){dx<0?lbNext():lbPrev();}};
+}
+
+// Chat
+// ═══════════════════════════════════════
+function renderChat(){
+  const p=S.chatPlace;if(!p){document.getElementById("co")?.remove();return;}
+  let el=document.getElementById("co");
+  if(!el){el=document.createElement("div");el.id="co";el.className="chat-overlay";document.body.appendChild(el);}
+  let mh=S.chatMsgs.length===0?`<p class="chat-empty">Ask me anything about ${esc(p.name)}...</p>`
+    :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${escBr(m.content)}</div>`).join("");
+  if(S.chatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
+  el.innerHTML=`<div class="chat-header"><div><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeChat()">✕</button></div>
+    <div class="chat-msgs" id="cs">${mh}</div>
+    <div class="chat-input-bar"><input class="input" style="flex:1" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChat()"><button class="btn active" onclick="sendChat()" ${S.chatLoading?"disabled":""}>→</button></div>`;
+  const sc=document.getElementById("cs");if(sc)sc.scrollTop=sc.scrollHeight;
+}
+async function sendChat(){
+  const inp=document.getElementById("ci"),text=inp?.value?.trim();
+  if(!text||S.chatLoading)return;inp.value="";
+  const p=S.chatPlace,q=S.query;
+  S.chatMsgs.push({role:"user",content:text});S.chatLoading=true;renderChat();
+  try{
+    const sys=`You are GaryLand's concierge discussing "${p.name}" at ${p.address}. Knowledgeable, opinionated, helpful — a trusted local friend. Location: ${q.loc}.${q.sun?` User wants sun at ${q.sun.time} on ${q.sun.date}.`:""}\nYou CANNOT show images. If asked, tell user to Google Images "${p.name} ${p.address}".`;
+    const reply=await callClaude(S.chatMsgs.map(m=>({role:m.role,content:m.content})),sys);
+    S.chatMsgs.push({role:"assistant",content:reply||"No response."});
+  }catch(e){S.chatMsgs.push({role:"assistant",content:e.message});}
+  S.chatLoading=false;renderChat();
+}
+function openChat(i){S.chatPlace=S.results.places[i];S.chatMsgs=[];S.chatLoading=false;renderChat();}
+function closeChat(){S.chatPlace=null;document.getElementById("co")?.remove();}
+
+// ═══════════════════════════════════════
+// Settings
+// ═══════════════════════════════════════
+// Settings removed — keys are embedded in config
+
+// ═══════════════════════════════════════
+// Actions
+// ═══════════════════════════════════════
+function pickCat(id){S.cat=id;S.prefs=[];render();}
+function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
+function goBack(){clearInterval(S.loadInterval);S.loadInterval=null;S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;document.body.style.overflow="";render();}
+
+async function doSearch(){
+  if(S.searching)return;
+  // Re-read location from DOM in case oninput didn't fire
+  const li=document.getElementById("li");if(li)S.loc=li.value;
+  const cat=CATS.find(c=>c.id===S.cat);
+  if(!cat){alert("Pick a category first");return;}
+  if(!S.loc.trim()){alert("Enter a location");return;}
+  S.searching=true;
+  const q={cat,prefs:[...S.prefs],loc:S.loc,sun:cat.needsSun?{date:S.date,time:timeStr()}:null};
+  S.query=q;S.screen="loading";S.error=null;S.loadMsgIdx=0;
+  document.body.style.overflow="hidden";
+  clearInterval(S.loadInterval);S.loadInterval=null;render();
+
+  let sunCtx="";
+  if(q.sun){const d=new Date(q.sun.date+"T"+q.sun.time+":00"),pos=getSunPosition(d,51.5,-0.12);
+    sunCtx=`\nSun: azimuth ${pos.azimuth.toFixed(0)}°, altitude ${pos.altitude.toFixed(1)}°. User wants OUTSIDE IN DIRECT SUNLIGHT. Evaluate outdoor seating orientation. Be honest.`;}
+  const prefStr=q.prefs.length?`\nPrefs: ${q.prefs.join(", ")}.`:"";
+  const catDesc={sun_drink:"pubs/bars with outdoor seating",sun_eat:"restaurants with outdoor dining",pub:"great pubs",eat:"great restaurants",stay:"places to stay"}[q.cat.id]||"places";
+  const prompt=`Find 4-5 best ${catDesc} near "${q.loc}".${prefStr}${sunCtx}\n\nDo 1-2 web searches. Return ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only places you'd actually go to.`;
+
+  try{
+    const text=await callClaude([{role:"user",content:prompt}]);
+    const m=text.match(/\{[\s\S]*"places"[\s\S]*\}/);
+    if(!m)throw new Error("No results — try different location");
+    const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
+    if(!parsed.places?.length)throw new Error("No places found");
+    clearInterval(S.loadInterval);S.loadInterval=null;
+    S.results=parsed;S.screen="results";S.searching=false;document.body.style.overflow="";render();
+  }catch(e){
+    clearInterval(S.loadInterval);S.loadInterval=null;
+    S.error=e.message;S.searching=false;renderLoading();
+  }
+}
+
+// ── Boot ──
+render();
+</script>
+</body>
+</html>
