@@ -67,12 +67,9 @@ input[type="range"]{accent-color:#d4a853}
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;left:0;top:0;width:100%;height:100%;background:#0f0e0c;z-index:500;text-align:center}
-.welcome-bg{position:fixed;left:0;top:0;width:100%;height:100%;background:url('bg.png') center center/cover no-repeat;z-index:0}
-.welcome-content{position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:15vh}
+.welcome-content{position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0e0c}
 .cat-stack{display:flex;flex-direction:column;gap:10px;width:280px}
-.cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center;background:rgba(15,14,12,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(212,168,83,0.3);color:#e8e2d6}
-.cat-stack .btn.active{background:rgba(15,14,12,0.9);border:2px solid #d4a853;color:#d4a853}
-.prefs-panel{background:rgba(15,14,12,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:20px;padding:20px;margin-top:16px;width:100%;max-width:300px;border:1px solid rgba(42,40,38,0.6)}
+.cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center}
 .prefs-screen{position:fixed;left:0;top:0;width:100%;height:100%;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 32px}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
@@ -213,7 +210,8 @@ function renderWelcome(){
   
   // Screen 1: Category picker with background image
   if(!cat){
-    app.innerHTML=`<div class="welcome-bg"></div><div class="welcome-content">
+    app.innerHTML=`<div class="welcome-content">
+      <h1 class="h1" style="margin-bottom:24px">🪲 GaryLand</h1>
       <div class="cat-stack">
         ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
       </div>
