@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>🪲 GaryLand</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -66,14 +66,14 @@ input[type="range"]{accent-color:#d4a853}
 .chat-input-bar{padding:12px 16px;border-top:1px solid #2a2826;display:flex;gap:8px}
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
-.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center;touch-action:none}
-.welcome-bg{background:url('bg.png') center center/cover no-repeat;position:fixed;inset:0;z-index:0}
-.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:20vh;overflow:hidden;touch-action:none}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;top:-50px;left:0;right:0;bottom:-50px;background:#0f0e0c;z-index:500;text-align:center;touch-action:none}
+.welcome-bg{background:url('bg.png') center center/cover no-repeat;position:fixed;top:-50px;left:0;right:0;bottom:-50px;z-index:0}
+.welcome-content{position:fixed;top:-50px;left:0;right:0;bottom:-50px;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:20vh;overflow:hidden;touch-action:none}
 .cat-stack{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
 .cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center;background:rgba(15,14,12,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(212,168,83,0.3);color:#e8e2d6}
 .cat-stack .btn.active{background:rgba(15,14,12,0.9);border:2px solid #d4a853;color:#d4a853}
 .prefs-panel{background:rgba(15,14,12,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:20px;padding:20px;margin-top:16px;width:100%;max-width:300px;border:1px solid rgba(42,40,38,0.6)}
-.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;overflow:hidden;touch-action:none}
+.prefs-screen{position:fixed;top:-50px;left:0;right:0;bottom:-50px;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 60px;overflow:hidden;touch-action:none}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
 .flex-wrap-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
@@ -222,8 +222,8 @@ function renderWelcome(){
   }
 
   // Screen 2: Preferences + location on black bg, fixed viewport
-  let h=`<div class="prefs-screen">
-    <button class="back-btn" onclick="S.cat=null;S.prefs=[];render()">← ${cat.icon} ${cat.label}</button>
+  let h=`<div class="prefs-screen"><div style="width:100%;max-width:320px">
+    <button class="back-btn" style="display:block;text-align:center" onclick="S.cat=null;S.prefs=[];render()">← ${cat.icon} ${cat.label}</button>
     <p class="label" style="text-align:center;margin-top:16px">Preferences</p>
     <div class="flex-wrap-tight" style="justify-content:center;margin-top:8px">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>`;
   if(cat.needsSun){
@@ -233,11 +233,11 @@ function renderWelcome(){
     <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
     <span id="tv" class="time-val">${timeStr()}</span></div></div>`;
   }
-  h+=`<div style="margin-top:24px;width:100%;max-width:300px">
+  h+=`<div style="margin-top:24px">
     <button class="btn" style="width:100%;margin-bottom:10px;font-size:13px" onclick="useCurrentLocation()">📍 Use current location</button>
     <input class="input" id="li" value="${esc(S.loc)}" placeholder="Or type a location..." oninput="S.loc=this.value"></div>
-  <button class="btn active full" style="margin-top:16px" onclick="doSearch()">🪲 Find places</button>
-  </div>`;
+  <button class="btn active full" style="margin-top:16px;max-width:320px" onclick="doSearch()">🪲 Find places</button>
+  </div></div>`;
   app.innerHTML=h;
 }
 
@@ -253,7 +253,7 @@ function renderLoading(){
 
 function renderResults(){
   const q=S.query;
-  let h=`<div style="position:fixed;inset:0;background:#0f0e0c;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:10"><div style="max-width:480px;margin:0 auto;padding:20px 16px">
+  let h=`<div style="position:fixed;top:-50px;left:0;right:0;bottom:-50px;background:#0f0e0c;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:10"><div style="max-width:480px;margin:0 auto;padding:70px 16px 60px">
     <button class="back-btn" onclick="goBack()">← Back to search</button>
     <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
     <p style="font-size:13px;color:#6a645a;margin-bottom:20px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>
