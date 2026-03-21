@@ -68,12 +68,12 @@ input[type="range"]{accent-color:#d4a853}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center}
 .welcome-bg{background:url('bg.png') center center/cover no-repeat;position:fixed;inset:0;z-index:0}
-.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:28vh 24px 80px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:20vh;overflow:hidden}
 .cat-stack{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
 .cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center;background:rgba(15,14,12,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(212,168,83,0.3);color:#e8e2d6}
 .cat-stack .btn.active{background:rgba(15,14,12,0.9);border:2px solid #d4a853;color:#d4a853}
 .prefs-panel{background:rgba(15,14,12,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:20px;padding:20px;margin-top:16px;width:100%;max-width:300px;border:1px solid rgba(42,40,38,0.6)}
-.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;overflow:hidden;max-width:480px;margin:0 auto}
+.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;overflow:hidden}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
 .flex-wrap-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
@@ -233,7 +233,9 @@ function renderWelcome(){
     <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
     <span id="tv" class="time-val">${timeStr()}</span></div></div>`;
   }
-  h+=`<div style="margin-top:24px"><input class="input" id="li" value="${esc(S.loc)}" placeholder="Where? e.g. Shoreditch, Tenerife..." oninput="S.loc=this.value"></div>
+  h+=`<div style="margin-top:24px;width:100%;max-width:300px">
+    <button class="btn" style="width:100%;margin-bottom:10px;font-size:13px" onclick="useCurrentLocation()">📍 Use current location</button>
+    <input class="input" id="li" value="${esc(S.loc)}" placeholder="Or type a location..." oninput="S.loc=this.value"></div>
   <button class="btn active full" style="margin-top:16px" onclick="doSearch()">🪲 Find places</button>
   </div>`;
   app.innerHTML=h;
@@ -331,6 +333,36 @@ function closeChat(){S.chatPlace=null;document.getElementById("co")?.remove();}
 // ═══════════════════════════════════════
 // Actions
 // ═══════════════════════════════════════
+function useCurrentLocation(){
+  if(!navigator.geolocation){alert("Geolocation not supported");return;}
+  const btn=event.target;btn.textContent="📍 Locating...";btn.disabled=true;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    // Load Maps if needed, then reverse geocode
+    const doGeocode=()=>{
+      if(window.google?.maps){
+        const gc=new google.maps.Geocoder();
+        gc.geocode({location:{lat,lng}},(results,status)=>{
+          if(status==="OK"&&results[0]){
+            const loc=results[0].address_components.find(c=>c.types.includes("locality")||c.types.includes("postal_town")||c.types.includes("sublocality"));
+            S.loc=loc?loc.long_name:`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          } else {
+            S.loc=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          }
+          render();
+        });
+      } else {
+        S.loc=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        render();
+      }
+    };
+    if(GOOGLE_KEY&&!window.google?.maps){loadMaps(GOOGLE_KEY).then(doGeocode).catch(doGeocode);}
+    else{doGeocode();}
+  },err=>{
+    btn.textContent="📍 Use current location";btn.disabled=false;
+    alert("Couldn't get location — type it instead");
+  },{timeout:10000});
+}
 function pickCat(id){S.cat=id;S.prefs=[];render();}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
 function goBack(){clearInterval(S.loadInterval);S.loadInterval=null;S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;render();}
