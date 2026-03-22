@@ -135,8 +135,20 @@ const app=document.getElementById("app");
 const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const escBr=s=>esc(s).replace(/\n/g,"<br>");
 function timeStr(){const m=S.timeIdx*15;return`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
-function haversine(lat1,lng1,lat2,lng2){const R=3959,toR=n=>n*Math.PI/180,dLat=toR(lat2-lat1),dLng=toR(lng2-lng1),a=Math.sin(dLat/2)**2+Math.cos(toR(lat1))*Math.cos(toR(lat2))*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
-function distStr(p){if(!S.userLat||!p.lat||!p.lng)return"";const mi=haversine(S.userLat,S.userLng,p.lat,p.lng);return mi<0.3?`${Math.round(mi*1609)}m`:mi<10?`${mi.toFixed(1)} mi`:`${Math.round(mi)} mi`;}
+function loadRoadDistances(){
+  if(!S.userLat||!S.results?.places?.length||!window.google?.maps)return;
+  const svc=new google.maps.DistanceMatrixService();
+  const origin=new google.maps.LatLng(S.userLat,S.userLng);
+  const dests=S.results.places.map(p=>p.lat&&p.lng?new google.maps.LatLng(p.lat,p.lng):p.address);
+  svc.getDistanceMatrix({origins:[origin],destinations:dests,travelMode:'DRIVING',unitSystem:google.maps.UnitSystem.IMPERIAL},(res,st)=>{
+    if(st!=='OK'||!res?.rows?.[0])return;
+    res.rows[0].elements.forEach((el,i)=>{
+      const span=document.getElementById('dist-'+i);
+      if(!span||el.status!=='OK')return;
+      span.textContent=' · '+el.distance.text;
+    });
+  });
+}
 function showMapPicker(name,addr,lat,lng){const enc=encodeURIComponent(name+', '+addr),ll=lat&&lng?`${lat},${lng}`:'';
   document.getElementById('mp')?.remove();
   const el=document.createElement('div');el.id='mp';el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;display:flex;align-items:flex-end;justify-content:center';
@@ -152,7 +164,7 @@ function showMapPicker(name,addr,lat,lng){const enc=encodeURIComponent(name+', '
 // ═══════════════════════════════════════
 async function callClaude(messages,system){
   if(!WORKER_URL||WORKER_URL.includes("PASTE")){throw new Error("Worker URL not configured — edit the HTML config section");}
-  const body={model:"claude-sonnet-4-20250514",max_tokens:1000,messages,tools:[{type:"web_search_20250305",name:"web_search"}]};
+  const body={model:"claude-sonnet-4-20250514",max_tokens:2000,messages,tools:[{type:"web_search_20250305",name:"web_search"}]};
   if(system)body.system=system;
   const r=await fetch(WORKER_URL,{
     method:"POST",
@@ -270,9 +282,8 @@ function renderResults(){
     <div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px">`;
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
-    const dist=distStr(p);
     h+=`<div class="card" style="animation-delay:${i*0.08}s">
-      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}${dist?` <span style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400">· ${dist}</span>`:""}</div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#3a3830" onclick="showMapPicker('${esc(p.name).replace(/'/g,"\\'")}','${esc(p.address).replace(/'/g,"\\'")}',${p.lat||'null'},${p.lng||'null'})">${esc(p.address)}</div></div>
+      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}<span id="dist-${i}" style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400"></span></div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="showMapPicker('${esc(p.name).replace(/'/g,"\\'")}','${esc(p.address).replace(/'/g,"\\'")}',${p.lat||'null'},${p.lng||'null'})">${esc(p.address)}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>
       <div id="ph-${i}" class="photo-strip"><div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div><div class="photo-shimmer" style="width:180px"></div></div>
       <div class="card-body"><p class="card-summary">${esc(p.summary)}</p>
@@ -283,6 +294,7 @@ function renderResults(){
   h+=`</div></div></div>`;
   app.innerHTML=h;
   S.results.places.forEach((p,i)=>loadCardPhotos(i,p.name,p.address));
+  loadRoadDistances();
 }
 
 // ═══════════════════════════════════════
