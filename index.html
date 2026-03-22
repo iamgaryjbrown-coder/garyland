@@ -8,7 +8,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{overflow:hidden;height:100%;width:100vw;max-width:100vw;position:fixed}
-body{background:#0f0e0c;color:#e8e2d6;font-family:'DM Sans',sans-serif;height:100%;width:100vw;max-width:100vw;overflow:hidden;margin:0;position:fixed}
+body{background:#000;color:#e8e2d6;font-family:'DM Sans',sans-serif;height:100%;width:100vw;max-width:100vw;overflow:hidden;margin:0;position:fixed}
 input::placeholder{color:#5a5548}
 ::-webkit-scrollbar{width:6px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2a2826;border-radius:3px}
 @keyframes beetle-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -66,11 +66,11 @@ input[type="range"]{accent-color:#d4a853}
 .chat-input-bar{padding:12px 16px;border-top:1px solid #2a2826;display:flex;gap:8px;overflow:hidden}
 .settings-overlay{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
-.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#0f0e0c;z-index:500;text-align:center;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
-.welcome-content{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0e0c;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#000;z-index:500;text-align:center;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
+.welcome-content{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
 .cat-stack{display:flex;flex-direction:column;gap:10px;width:280px}
 .cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center}
-.prefs-screen{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;padding:env(safe-area-inset-top,20px) 32px env(safe-area-inset-bottom,20px) 32px}
+.prefs-screen{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#000;z-index:10;display:flex;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;padding:env(safe-area-inset-top,20px) 32px env(safe-area-inset-bottom,20px) 32px}
 .prefs-screen::before,.prefs-screen::after{content:'';flex:1 0 0px}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
@@ -100,17 +100,14 @@ input[type="range"]{accent-color:#d4a853}
 .map-popup-header h3{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#d4a853;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:12px}
 .map-popup-close{background:none;border:none;color:#8a8478;font-size:22px;cursor:pointer;padding:4px}
 .map-popup-buttons{display:flex;gap:8px;padding:12px 16px;background:#1a1917;border-top:1px solid #2a2826}
-.map-popup-buttons a{flex:1;text-align:center;padding:12px 8px;border-radius:12px;background:#0f0e0c;border:1px solid #2a2826;color:#e8e2d6;text-decoration:none;font-size:14px;font-family:'DM Sans',sans-serif}
+.map-popup-buttons a{flex:1;text-align:center;padding:12px 8px;border-radius:12px;background:#000;border:1px solid #2a2826;color:#e8e2d6;text-decoration:none;font-size:14px;font-family:'DM Sans',sans-serif}
 
 /* ── Favourite Heart ── */
 .fav-btn{background:none;border:none;font-size:20px;cursor:pointer;padding:2px 4px;transition:transform 0.15s;line-height:1}
 .fav-btn:active{transform:scale(1.3)}
 
-/* ── Spud Chat extras ── */
-.spud-chat-clear{background:none;border:none;color:#5a5548;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
-
 /* ── Favourites Screen ── */
-.favs-screen{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#0f0e0c;z-index:10;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none}
+.favs-screen{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#000;z-index:10;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none}
 .fav-card{background:#1a1917;border-radius:12px;border:1px solid #2a2826;padding:14px;display:flex;gap:12px;align-items:flex-start}
 .fav-card-body{flex:1;min-width:0}
 .fav-card-name{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#e8e2d6}
@@ -635,9 +632,7 @@ function renderWelcome(){
   if(!cat){
     const favCount=favourites.length;
     app.innerHTML=`<div class="welcome-content">
-      <div style="width:280px;max-height:140px;overflow:hidden;margin-bottom:24px;border-radius:8px">
-        <video autoplay loop muted playsinline style="width:100%;display:block" src="garyland-title.mp4"></video>
-      </div>
+      <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
       <div class="cat-stack">
         ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
         <div style="height:6px"></div>
@@ -686,7 +681,7 @@ function renderResults(){
   for(const k of Object.keys(shadowMaps)){try{shadowMaps[k].remove();}catch(e){}}
   shadowMaps={};shadowLayers={};buildingLayers={};cardBuildings={};cardCoords={};cardPhotos={};
 
-  let h=`<div style="position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#0f0e0c;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;z-index:10"><div style="max-width:480px;margin:0 auto;padding:20px 16px 60px;overflow:hidden">
+  let h=`<div style="position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#000;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;z-index:10"><div style="max-width:480px;margin:0 auto;padding:20px 16px 60px;overflow:hidden">
     <button class="back-btn" onclick="goBack()">← Back to search</button>
     <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
     <p style="font-size:13px;color:#6a645a;margin-bottom:16px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>`;
@@ -806,16 +801,8 @@ function renderSpudChat(){
   if(S.spudChatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Spud is thinking...</p>`;
   let el=document.getElementById("spud-co");
   if(!el){el=document.createElement("div");el.id="spud-co";el.className="chat-overlay";document.body.appendChild(el);}
-  el.innerHTML=`<div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3></div>
-    <div style="display:flex;gap:12px;align-items:center">
-      ${spudChatHistory.length?`<button class="spud-chat-clear" onclick="clearSpudChat()">Clear</button>`:""}
-      <button class="chat-close" onclick="closeSpudChat()">✕</button>
-    </div>
-  </div>
-  <div class="chat-msgs" id="scm">${mh}</div>
-  <div class="chat-input-bar"><input class="input" style="flex:1;min-width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div>`;
+  el.innerHTML=`<div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3>${spudChatHistory.length?`<p style="cursor:pointer" onclick="clearSpudChat()">Clear history</p>`:""}</div><button class="chat-close" onclick="closeSpudChat()">✕</button></div><div class="chat-msgs" id="scm">${mh}</div><div class="chat-input-bar"><input class="input" style="flex:1;min-width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div>`;
   const sc=document.getElementById("scm");if(sc)sc.scrollTop=sc.scrollHeight;
-  setTimeout(()=>{document.getElementById("sci")?.focus();},50);
 }
 
 async function sendSpudChat(){
