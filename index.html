@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🪲 GaryLand v12</title>
+<title>🪲 GaryLand v13</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -649,7 +649,7 @@ function renderWelcome(){
     const favCount=favourites.length;
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:12px">v12</p>
+      <p style="font-size:9px;color:#333;margin-bottom:12px">v13</p>
       <div class="cat-stack">
         ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
         <div style="height:6px"></div>
@@ -781,9 +781,7 @@ function renderChat(){
   let mh=S.chatMsgs.length===0?`<p class="chat-empty">Ask me anything about ${esc(p.name)}...</p>`
     :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
   if(S.chatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
-  app.innerHTML=`<div style="height:var(--vvh,100%);display:flex;flex-direction:column;background:#000;overflow:hidden"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeChat()">✕</button></div>
-    <div class="chat-msgs" id="cs">${mh}</div>
-    <div class="chat-input-bar"><input class="input" style="flex:1;min-width:0;width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChat()"><button class="btn active" style="flex-shrink:0" onclick="sendChat()" ${S.chatLoading?"disabled":""}>→</button></div></div>`;
+  app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="cs"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChat()"><button class="btn active" style="flex-shrink:0" onclick="sendChat()" ${S.chatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("cs");if(sc)sc.scrollTop=sc.scrollHeight;
 }
 async function sendChat(){
@@ -815,9 +813,7 @@ function renderSpudChat(){
   let mh=spudChatHistory.length===0?`<p class="chat-empty">Ask me anything — pubs, restaurants, days out, what to do when it rains...</p>`
     :spudChatHistory.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
   if(S.spudChatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Spud is thinking...</p>`;
-  app.innerHTML=`<div style="height:var(--vvh,100%);display:flex;flex-direction:column;background:#000;overflow:hidden"><div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3>${spudChatHistory.length?`<p style="cursor:pointer" onclick="clearSpudChat()">Clear history</p>`:""}</div><button class="chat-close" onclick="closeSpudChat()">✕</button></div>
-    <div class="chat-msgs" id="scm">${mh}</div>
-    <div class="chat-input-bar"><input class="input" style="flex:1;min-width:0;width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" style="flex-shrink:0" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div></div>`;
+  app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3>${spudChatHistory.length?`<p style="cursor:pointer" onclick="clearSpudChat()">Clear history</p>`:""}</div><button class="chat-close" onclick="closeSpudChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="scm"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" style="flex-shrink:0" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("scm");if(sc)sc.scrollTop=sc.scrollHeight;
 }
 
