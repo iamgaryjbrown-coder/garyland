@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🪲 GaryLand v13</title>
+<title>🪲 GaryLand v14</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -25,7 +25,7 @@ input::placeholder{color:#5a5548}
 .btn.full:disabled{opacity:0.4;cursor:default}
 .chip{padding:6px 14px;border-radius:20px;border:1px solid #2a2826;background:transparent;color:#6a645a;font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif}
 .chip.on{border:1.5px solid #d4a853;background:rgba(212,168,83,0.12);color:#d4a853;font-weight:600}
-.input{width:100%;padding:12px 16px;border-radius:12px;border:1px solid #2a2826;background:#1a1917;color:#e8e2d6;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+.input{width:100%;padding:12px 16px;border-radius:12px;border:1px solid #2a2826;background:#1a1917;color:#e8e2d6;font-size:16px;outline:none;font-family:'DM Sans',sans-serif}
 .card{background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid #2a2826;animation:fade-up 0.4s ease both;max-width:100%;min-width:0}
 .card-head{padding:14px 14px 0;display:flex;justify-content:space-between;align-items:flex-start}
 .card-name{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:#e8e2d6;overflow-wrap:break-word}
@@ -649,7 +649,7 @@ function renderWelcome(){
     const favCount=favourites.length;
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:12px">v13</p>
+      <p style="font-size:9px;color:#333;margin-bottom:12px">v14</p>
       <div class="cat-stack">
         ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
         <div style="height:6px"></div>
