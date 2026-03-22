@@ -464,13 +464,17 @@ function updateShadowMap(i){
   }
 }
 
+function syncSunControls(){
+  // Sync all date inputs, range sliders, and time displays
+  document.querySelectorAll('.sun-date-input').forEach(el=>{el.value=S.date;});
+  document.querySelectorAll('.sun-time-input').forEach(el=>{el.value=S.timeIdx;});
+  document.querySelectorAll('.sun-time-display').forEach(el=>{el.textContent=timeStr();});
+}
+
 function updateAllShadowMaps(){
   for(const i of Object.keys(shadowMaps)){
     updateShadowMap(parseInt(i));
   }
-  // Update the time display
-  const tv=document.getElementById('results-tv');
-  if(tv)tv.textContent=timeStr();
 }
 
 // ═══════════════════════════════════════
@@ -536,18 +540,6 @@ function renderResults(){
     <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
     <p style="font-size:13px;color:#6a645a;margin-bottom:16px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>`;
 
-  // Sun controls bar — date + time slider for live shadow scrubbing
-  if(isSun){
-    h+=`<div class="sun-controls">
-      <p style="font-size:11px;color:#d4a853;font-weight:600;margin-bottom:8px">☀️ Adjust sun time</p>
-      <div class="sun-controls-row">
-        <input type="date" value="${S.date}" onchange="S.date=this.value;updateAllShadowMaps()">
-        <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;updateAllShadowMaps()">
-        <span id="results-tv" class="time-val">${timeStr()}</span>
-      </div>
-    </div>`;
-  }
-
   h+=`<div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px">`;
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
@@ -555,9 +547,16 @@ function renderResults(){
       <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}<span id="dist-${i}" style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400"></span></div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="openMapPopup(${i})">${esc(p.address)}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>`;
 
-    // Shadow map (sun categories only)
+    // Sun controls + shadow map (sun categories only)
     if(isSun){
-      h+=`<div class="shadow-map-wrap">
+      h+=`<div class="sun-controls" style="margin:10px 12px 0;padding:10px 12px;border-radius:10px 10px 0 0;border-bottom:none">
+        <div class="sun-controls-row">
+          <input type="date" class="sun-date-input" value="${S.date}" onchange="S.date=this.value;syncSunControls();updateAllShadowMaps()">
+          <input type="range" class="sun-time-input" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;syncSunControls();updateAllShadowMaps()">
+          <span class="time-val sun-time-display">${timeStr()}</span>
+        </div>
+      </div>
+      <div class="shadow-map-wrap" style="margin-top:0;border-top:none;border-radius:0 0 10px 10px">
         <div id="smap-${i}" class="shadow-map"></div>
         <div id="smap-load-${i}" class="shadow-map-loading">Loading shadows...</div>
       </div>`;
