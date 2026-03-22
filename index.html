@@ -284,15 +284,15 @@ function renderLightbox(){
   let el=document.getElementById("lb");
   if(!el){el=document.createElement("div");el.id="lb";el.className="lightbox";document.body.appendChild(el);}
   const multi=urls.length>1;
-  el.innerHTML=`<button class="lb-close" onclick="closeLightbox()">✕</button>
-    ${multi?`<button class="lb-prev" onclick="event.stopPropagation();lbPrev()">‹</button>`:""}<img src="${urls[lbIdx]}" alt="photo">${multi?`<button class="lb-next" onclick="event.stopPropagation();lbNext()">›</button>`:""}
+  el.innerHTML=`<button class="lb-close" ontouchend="event.stopPropagation();closeLightbox()" onclick="closeLightbox()">✕</button>
+    ${multi?`<button class="lb-prev" ontouchend="event.stopPropagation();lbPrev()" onclick="event.stopPropagation();lbPrev()">‹</button>`:""}<img src="${urls[lbIdx]}" alt="photo">${multi?`<button class="lb-next" ontouchend="event.stopPropagation();lbNext()" onclick="event.stopPropagation();lbNext()">›</button>`:""}
     ${multi?`<div class="lb-counter">${lbIdx+1} / ${urls.length}</div>`:""}`;
   el.onclick=e=>{if(e.target===el)closeLightbox();};
   // Swipe support — preventDefault stops Safari back-gesture
   let tx=0;
-  el.ontouchstart=e=>{e.preventDefault();tx=e.touches[0].clientX;};
-  el.ontouchmove=e=>{e.preventDefault();};
-  el.ontouchend=e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50){dx<0?lbNext():lbPrev();}};
+  el.ontouchstart=e=>{if(e.target.tagName==='BUTTON')return;e.preventDefault();tx=e.touches[0].clientX;};
+  el.ontouchmove=e=>{if(e.target.tagName==='BUTTON')return;e.preventDefault();};
+  el.ontouchend=e=>{if(e.target.tagName==='BUTTON')return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50){dx<0?lbNext():lbPrev();}};
 }
 
 // Chat
