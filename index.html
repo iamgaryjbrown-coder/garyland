@@ -89,10 +89,10 @@ input[type="range"]{accent-color:#d4a853}
 .shadow-map .leaflet-tile-pane{filter:brightness(0.7) saturate(0.6)}
 .shadow-map-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,14,12,0.6);z-index:500;font-size:12px;color:#8a8478;pointer-events:none}
 
-/* ── Sun Controls Bar (results) ── */
-.sun-controls{background:#1a1917;border:1px solid #2a2826;border-radius:12px;padding:12px 16px;margin-bottom:16px;overflow:hidden}
-.sun-controls-row{display:flex;align-items:center;gap:8px}
-.sun-controls-row input[type="range"]{flex:1;min-width:0}
+/* ── Shadow Time Slider (overlaid on map) ── */
+.shadow-time-bar{position:absolute;bottom:0;left:0;right:0;z-index:500;display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(15,14,12,0.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.shadow-time-bar input[type="range"]{flex:1;min-width:0;height:20px;margin:0}
+.shadow-time-bar .time-val{font-size:13px}
 
 /* ── Map Popup ── */
 .map-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;display:flex;flex-direction:column}
@@ -326,10 +326,6 @@ function loadCardPhotos(i,name,addr){
 function hideShadowMap(i){
   const wrap=document.getElementById('smap-'+i)?.parentElement;
   if(wrap)wrap.style.display='none';
-  // Also hide the sun controls above it
-  if(wrap?.previousElementSibling?.classList?.contains('sun-controls')){
-    wrap.previousElementSibling.style.display='none';
-  }
 }
 
 // ═══════════════════════════════════════
@@ -626,18 +622,15 @@ function renderResults(){
       <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}<span id="dist-${i}" style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400"></span></div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="openMapPopup(${i})">${esc(p.address)}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>`;
 
-    // Sun controls + shadow map (sun categories only)
+    // Shadow map with overlaid time slider (sun categories only)
     if(isSun){
-      h+=`<div class="sun-controls" style="margin:10px 12px 0;padding:8px 12px;border-radius:10px 10px 0 0;border-bottom:none">
-        <div class="sun-controls-row">
-          <span style="font-size:11px;color:#8a8478">☀️</span>
+      h+=`<div class="shadow-map-wrap">
+        <div id="smap-${i}" class="shadow-map"></div>
+        <div id="smap-load-${i}" class="shadow-map-loading">Loading shadows...</div>
+        <div class="shadow-time-bar">
           <input type="range" class="sun-time-input" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;syncSunControls();updateAllShadowMaps()">
           <span class="time-val sun-time-display">${timeStr()}</span>
         </div>
-      </div>
-      <div class="shadow-map-wrap" style="margin-top:0;border-top:none;border-radius:0 0 10px 10px">
-        <div id="smap-${i}" class="shadow-map"></div>
-        <div id="smap-load-${i}" class="shadow-map-loading">Loading shadows...</div>
       </div>`;
     }
 
