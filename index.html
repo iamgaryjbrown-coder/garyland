@@ -124,6 +124,7 @@ const BEETLE=`<video autoplay loop muted playsinline style="width:120px;height:1
 let S={
   screen:"welcome",
   cat:null,prefs:[],loc:"",
+  userLat:null,userLng:null,
   date:new Date().toISOString().slice(0,10),
   timeIdx:Math.round((new Date().getHours()*60+new Date().getMinutes())/15),
   results:null,query:null,error:null,
@@ -134,7 +135,18 @@ const app=document.getElementById("app");
 const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const escBr=s=>esc(s).replace(/\n/g,"<br>");
 function timeStr(){const m=S.timeIdx*15;return`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
-
+function haversine(lat1,lng1,lat2,lng2){const R=3959,toR=n=>n*Math.PI/180,dLat=toR(lat2-lat1),dLng=toR(lng2-lng1),a=Math.sin(dLat/2)**2+Math.cos(toR(lat1))*Math.cos(toR(lat2))*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+function distStr(p){if(!S.userLat||!p.lat||!p.lng)return"";const mi=haversine(S.userLat,S.userLng,p.lat,p.lng);return mi<0.3?`${Math.round(mi*1609)}m`:mi<10?`${mi.toFixed(1)} mi`:`${Math.round(mi)} mi`;}
+function showMapPicker(name,addr,lat,lng){const enc=encodeURIComponent(name+', '+addr),ll=lat&&lng?`${lat},${lng}`:'';
+  document.getElementById('mp')?.remove();
+  const el=document.createElement('div');el.id='mp';el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;display:flex;align-items:flex-end;justify-content:center';
+  el.innerHTML=`<div style="width:100%;max-width:400px;padding:0 16px 40px"><div style="background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid #2a2826">
+    <p style="text-align:center;padding:14px 16px 10px;color:#8a8478;font-size:13px">Open in...</p>
+    <a href="https://maps.apple.com/?daddr=${ll||enc}" style="display:block;padding:14px 20px;border-top:1px solid #2a2826;color:#e8e2d6;text-decoration:none;font-size:15px;text-align:center">🗺️ Apple Maps</a>
+    <a href="https://www.google.com/maps/dir/?api=1&destination=${enc}" style="display:block;padding:14px 20px;border-top:1px solid #2a2826;color:#e8e2d6;text-decoration:none;font-size:15px;text-align:center">📍 Google Maps</a>
+    <a href="https://waze.com/ul?ll=${ll}&q=${enc}&navigate=yes" style="display:block;padding:14px 20px;border-top:1px solid #2a2826;color:#e8e2d6;text-decoration:none;font-size:15px;text-align:center">🚗 Waze</a>
+  </div><button onclick="document.getElementById('mp')?.remove()" style="width:100%;margin-top:8px;padding:14px;border-radius:16px;background:#1a1917;border:1px solid #2a2826;color:#d4a853;font-size:15px;font-weight:600;cursor:pointer">Cancel</button></div>`;
+  el.onclick=e=>{if(e.target===el)el.remove();};document.body.appendChild(el);}
 // ═══════════════════════════════════════
 // Claude API
 // ═══════════════════════════════════════
@@ -258,8 +270,9 @@ function renderResults(){
     <div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px">`;
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
+    const dist=distStr(p);
     h+=`<div class="card" style="animation-delay:${i*0.08}s">
-      <div class="card-head"><div><div class="card-name">${esc(p.name)}</div><div class="card-addr">${esc(p.address)}</div></div>
+      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}${dist?` <span style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400">· ${dist}</span>`:""}</div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#3a3830" onclick="showMapPicker('${esc(p.name).replace(/'/g,"\\'")}','${esc(p.address).replace(/'/g,"\\'")}',${p.lat||'null'},${p.lng||'null'})">${esc(p.address)}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>
       <div id="ph-${i}" class="photo-strip"><div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div><div class="photo-shimmer" style="width:180px"></div></div>
       <div class="card-body"><p class="card-summary">${esc(p.summary)}</p>
@@ -337,6 +350,7 @@ function useCurrentLocation(){
   const btn=event.target;btn.textContent="📍 Locating...";btn.disabled=true;
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    S.userLat=lat;S.userLng=lng;
     // Load Maps if needed, then reverse geocode
     const doGeocode=()=>{
       if(window.google?.maps){
@@ -364,7 +378,7 @@ function useCurrentLocation(){
 }
 function pickCat(id){S.cat=id;S.prefs=[];render();}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
-function goBack(){clearInterval(S.loadInterval);S.loadInterval=null;S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;render();}
+function goBack(){clearInterval(S.loadInterval);S.loadInterval=null;S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;S.userLat=null;S.userLng=null;render();}
 
 async function doSearch(){
   if(S.searching)return;
@@ -378,12 +392,21 @@ async function doSearch(){
   S.query=q;S.screen="loading";S.error=null;S.loadMsgIdx=0;
   clearInterval(S.loadInterval);S.loadInterval=null;render();
 
+  // Geocode typed location if we don't have coords
+  if(!S.userLat&&GOOGLE_KEY){
+    try{
+      if(!window.google?.maps)await loadMaps(GOOGLE_KEY);
+      const gc=new google.maps.Geocoder();
+      await new Promise(res=>{gc.geocode({address:S.loc},(r,st)=>{if(st==="OK"&&r?.[0]){S.userLat=r[0].geometry.location.lat();S.userLng=r[0].geometry.location.lng();}res();});});
+    }catch(e){}
+  }
+
   let sunCtx="";
   if(q.sun){const d=new Date(q.sun.date+"T"+q.sun.time+":00"),pos=getSunPosition(d,51.5,-0.12);
     sunCtx=`\nSun: azimuth ${pos.azimuth.toFixed(0)}°, altitude ${pos.altitude.toFixed(1)}°. User wants OUTSIDE IN DIRECT SUNLIGHT. Evaluate outdoor seating orientation. Be honest.`;}
   const prefStr=q.prefs.length?`\nPrefs: ${q.prefs.join(", ")}.`:"";
   const catDesc={sun_drink:"pubs/bars with outdoor seating",sun_eat:"restaurants with outdoor dining",pub:"great pubs",eat:"great restaurants",stay:"places to stay"}[q.cat.id]||"places";
-  const prompt=`Find 4-5 best ${catDesc} near "${q.loc}".${prefStr}${sunCtx}\n\nDo 1-2 web searches. Return ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only places you'd actually go to.`;
+  const prompt=`Find 4-5 best ${catDesc} near "${q.loc}".${prefStr}${sunCtx}\n\nDo 1-2 web searches. Return ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","lat":<number>,"lng":<number>,"rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only places you'd actually go to.`;
 
   try{
     const text=await callClaude([{role:"user",content:prompt}]);
