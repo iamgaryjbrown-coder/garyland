@@ -28,10 +28,10 @@ input::placeholder{color:#5a5548}
 .input{width:100%;padding:12px 16px;border-radius:12px;border:1px solid #2a2826;background:#1a1917;color:#e8e2d6;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
 .card{background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid #2a2826;animation:fade-up 0.4s ease both;max-width:100%;min-width:0}
 .card-head{padding:14px 14px 0;display:flex;justify-content:space-between;align-items:flex-start}
-.card-name{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:#e8e2d6}
+.card-name{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:#e8e2d6;overflow-wrap:break-word}
 .card-addr{font-size:12px;color:#6a645a;margin-top:2px}
 .card-body{padding:4px 14px 14px}
-.card-summary{font-size:13px;color:#a09a8e;margin-top:8px;line-height:1.5}
+.card-summary{font-size:13px;color:#a09a8e;margin-top:8px;line-height:1.5;overflow-wrap:break-word}
 .sun-verdict{font-size:12px;color:#fbbf24;margin-top:8px;padding:6px 10px;background:rgba(251,191,36,0.06);border-radius:8px}
 .tag{padding:3px 10px;border-radius:12px;background:rgba(212,168,83,0.08);color:#d4a853;font-size:11px;font-weight:500;display:inline-block}
 .badge{font-size:13px;font-weight:700;padding:3px 8px;border-radius:8px}
@@ -42,7 +42,7 @@ input::placeholder{color:#5a5548}
 .photo-strip img{height:130px;min-width:160px;max-width:220px;object-fit:cover;border-radius:8px;scroll-snap-align:start;flex-shrink:0;cursor:pointer;transition:opacity 0.15s}
 .photo-strip img:active{opacity:0.7}
 .photo-shimmer{height:130px;min-width:160px;border-radius:8px;flex-shrink:0;background:linear-gradient(90deg,#1a1917 25%,#2a2826 50%,#1a1917 75%);background-size:200% 100%;animation:shimmer 1.5s ease-in-out infinite}
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:2000;display:flex;align-items:center;justify-content:center;touch-action:none}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:2000;display:flex;align-items:center;justify-content:center;touch-action:none;overflow:hidden}
 .lightbox img{max-width:92vw;max-height:85vh;object-fit:contain;border-radius:8px}
 .lb-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#e8e2d6;font-size:28px;cursor:pointer;z-index:2001;padding:8px}
 .lb-prev,.lb-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(26,25,23,0.7);border:1px solid #2a2826;color:#d4a853;font-size:22px;cursor:pointer;padding:12px 14px;border-radius:50%;z-index:2001}
@@ -53,24 +53,24 @@ input::placeholder{color:#5a5548}
 .sun-label{font-size:12px;color:#d4a853;font-weight:600;margin-bottom:10px}
 input[type="range"]{accent-color:#d4a853}
 .time-val{font-size:14px;color:#d4a853;font-weight:700;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
-.chat-overlay{position:fixed;inset:0;background:rgba(15,14,12,0.96);z-index:1000;display:flex;flex-direction:column}
+.chat-overlay{position:fixed;inset:0;background:rgba(15,14,12,0.96);z-index:1000;display:flex;flex-direction:column;overflow-x:hidden}
 .chat-header{padding:14px 16px;border-bottom:1px solid #2a2826;display:flex;justify-content:space-between;align-items:center}
 .chat-header h3{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#d4a853}
 .chat-header p{font-size:11px;color:#6a645a}
 .chat-close{background:none;border:none;color:#8a8478;font-size:22px;cursor:pointer}
 .chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .chat-empty{color:#5a5548;font-size:13px;text-align:center;margin-top:40px}
-.chat-bubble{max-width:85%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;white-space:pre-wrap}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word}
 .chat-user{align-self:flex-end;background:rgba(212,168,83,0.14);color:#d4a853;border:1px solid rgba(212,168,83,0.25)}
 .chat-bot{align-self:flex-start;background:#1a1917;color:#c8c2b6;border:1px solid #2a2826}
 .chat-input-bar{padding:12px 16px;border-top:1px solid #2a2826;display:flex;gap:8px}
-.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden}
 .settings-box{background:#1a1917;border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid #2a2826}
-.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
-.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0e0c;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;inset:0;background:#0f0e0c;z-index:500;text-align:center;overflow-x:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
+.welcome-content{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0e0c;overflow-x:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0}
 .cat-stack{display:flex;flex-direction:column;gap:10px;width:280px}
 .cat-stack .btn{width:100%;padding:14px 20px;font-size:15px;text-align:center}
-.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:env(safe-area-inset-top,20px) 32px env(safe-area-inset-bottom,20px) 32px}
+.prefs-screen{position:fixed;inset:0;background:#0f0e0c;z-index:10;display:flex;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:env(safe-area-inset-top,20px) 32px env(safe-area-inset-bottom,20px) 32px}
 .prefs-screen::before,.prefs-screen::after{content:'';flex:1 0 0px}
 .flex-wrap{display:flex;flex-wrap:wrap;gap:8px}
 .flex-wrap-tight{display:flex;flex-wrap:wrap;gap:6px}
