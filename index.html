@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🪲 GaryLand v8</title>
+<title>🪲 GaryLand v9</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -162,11 +162,11 @@ function getSunPosition(date,lat,lng){const lw=RAD*-lng,phi=RAD*lat,d=toDays(dat
 
 // ── Data ──
 const CATS=[
-  {id:"sun_drink",icon:"🍺",label:"Drink in Sun",needsSun:true,chips:["Nearest","Cask ales","Craft beer","Wine bar","Cocktails","Dog-friendly","Big garden","Riverside","Rooftop"]},
-  {id:"sun_eat",icon:"🍽️",label:"Eat in Sun",needsSun:true,chips:["Nearest","Pub food","Fine dining","Brunch","Pizza","Seafood","Veggie-friendly","Dog-friendly","Terrace"]},
-  {id:"pub",icon:"🍻",label:"Great Pub",needsSun:false,chips:["Nearest","Cask ales","Craft beer","Cosy","Live music","Dog-friendly","Quiz night","Real fire","Good food"]},
-  {id:"eat",icon:"🥘",label:"Great Restaurant",needsSun:false,chips:["Nearest","Italian","Indian","Japanese","British","Mexican","Thai","Michelin","Cheap & cheerful"]},
-  {id:"stay",icon:"🏨",label:"Somewhere to Stay",needsSun:false,chips:["Nearest","Boutique","Budget","Luxury","Countryside","Dog-friendly","Spa","Historic","Family"]},
+  {id:"sun_drink",icon:"🍺",label:"Drink in Sun",needsSun:true,chips:["Cask ales","Craft beer","Wine bar","Cocktails","Dog-friendly","Big garden","Riverside","Rooftop"]},
+  {id:"sun_eat",icon:"🍽️",label:"Eat in Sun",needsSun:true,chips:["Pub food","Fine dining","Brunch","Pizza","Seafood","Veggie-friendly","Dog-friendly","Terrace"]},
+  {id:"pub",icon:"🍻",label:"Great Pub",needsSun:false,chips:["Cask ales","Craft beer","Cosy","Live music","Dog-friendly","Quiz night","Real fire","Good food"]},
+  {id:"eat",icon:"🥘",label:"Great Restaurant",needsSun:false,chips:["Italian","Indian","Japanese","British","Mexican","Thai","Michelin","Cheap & cheerful"]},
+  {id:"stay",icon:"🏨",label:"Somewhere to Stay",needsSun:false,chips:["Boutique","Budget","Luxury","Countryside","Dog-friendly","Spa","Historic","Family"]},
 ];
 const LOAD_MSGS={
   sun:["Calculating sun angles...","Checking shadow patterns...","Finding sunny terraces...","Rating the golden hour potential..."],
@@ -187,7 +187,8 @@ let S={
   results:null,query:null,error:null,
   chatPlace:null,chatMsgs:[],chatLoading:false,
   loadMsgIdx:0,loadInterval:null,searching:false,
-  spudChatLoading:false
+  spudChatLoading:false,
+  range:null  // null = no limit, or "500m", "1km", "2km"
 };
 
 // ── Persistent Storage ──
@@ -654,7 +655,7 @@ function renderWelcome(){
     const favCount=favourites.length;
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:12px">v8</p>
+      <p style="font-size:9px;color:#333;margin-bottom:12px">v9</p>
       <div class="cat-stack">
         ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
         <div style="height:6px"></div>
@@ -666,9 +667,11 @@ function renderWelcome(){
   }
 
   let h=`<div class="prefs-screen"><div style="width:280px">
-    <button class="back-btn" style="display:block" onclick="S.cat=null;S.prefs=[];render()">← ${cat.icon} ${cat.label}</button>
+    <button class="back-btn" style="display:block" onclick="S.cat=null;S.prefs=[];S.range=null;render()">← ${cat.icon} ${cat.label}</button>
     <p class="label" style="text-align:center;margin-top:16px">Preferences</p>
-    <div class="flex-wrap-tight" style="justify-content:center;margin-top:8px">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>`;
+    <div class="flex-wrap-tight" style="justify-content:center;margin-top:8px">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>
+    <p class="label" style="text-align:center;margin-top:16px">Range</p>
+    <div class="flex-wrap-tight" style="justify-content:center">${["500m","1km","2km"].map(r=>`<button class="chip ${S.range===r?"on":""}" onclick="S.range=S.range==='${r}'?null:'${r}';render()">${r}</button>`).join("")}</div>`;
   if(cat.needsSun){
     h+=`<div style="margin-top:20px"><p class="sun-label">☀️ Sun check for</p>
     <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
@@ -967,7 +970,7 @@ function goBack(){
   // Clean up shadow maps
   for(const k of Object.keys(shadowMaps)){try{shadowMaps[k].remove();}catch(e){}}
   shadowMaps={};shadowLayers={};buildingLayers={};cardBuildings={};cardCoords={};cardPhotos={};
-  S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;S.userLat=null;S.userLng=null;
+  S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;S.userLat=null;S.userLng=null;S.range=null;
   render();
 }
 
@@ -1004,10 +1007,9 @@ async function doSearch(){
   }
   const prefStr=q.prefs.length?`\nPrefs: ${q.prefs.join(", ")}.`:"";
   const catDesc={sun_drink:"pubs/bars with outdoor seating",sun_eat:"restaurants with outdoor dining",pub:"great pubs",eat:"great restaurants",stay:"places to stay"}[q.cat.id]||"places";
-  const isNearest=q.prefs.includes("Nearest");
-  const distLimit=isNearest?"within 1 mile (1.6 km)":"within 3 miles (5 km)";
-  const nearestNote=isNearest?"\nIMPORTANT: User wants the NEAREST options regardless of quality. Find the closest places to the exact location, even if average. Rate each honestly — if it's a 4/10, say so.":"";
-  const prompt=`Find 4-5 best ${catDesc} ${distLimit} of "${q.loc}".${prefStr}${sunCtx}${nearestNote}\n\nCRITICAL DISTANCE RULE: Every result MUST be ${distLimit} of "${q.loc}". Do NOT include anywhere further away. If you cannot find enough places within this radius, return fewer results rather than including distant ones.\n\nDo 1-2 web searches. Return ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only real places — never invent one.`;
+  const rangeStr=S.range||"5km";
+  const rangeNote=S.range?`\nIMPORTANT: The user has set a strict ${rangeStr} radius. Include EVERYTHING within this radius regardless of quality. If a place is rubbish, include it anyway but say it's rubbish. Better to show a nearby 3/10 than miss it. Return fewer results rather than including anything outside ${rangeStr}.`:"";
+  const prompt=`Find 4-5 best ${catDesc} within ${rangeStr} of "${q.loc}".${prefStr}${sunCtx}${rangeNote}\n\nCRITICAL DISTANCE RULE: Every result MUST be within ${rangeStr} of "${q.loc}". Do NOT suggest anywhere further away. Return fewer results if needed.\n\nDo 1-2 web searches. Return ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only real places — never invent one.`;
 
   try{
     const text=await callClaude([{role:"user",content:prompt}],SPUD_SYSTEM);
