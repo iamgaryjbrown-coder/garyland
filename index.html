@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🪲 GaryLand v9</title>
+<title>🪲 GaryLand v10</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -233,26 +233,6 @@ async function requestWakeLock(){
 }
 function releaseWakeLock(){
   try{if(wakeLock){wakeLock.release();wakeLock=null;}}catch(e){}
-}
-
-// ── iOS Keyboard Fix ──
-// When iOS keyboard opens, position:fixed elements break.
-// Use visualViewport to resize overlays to actual visible area.
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',()=>{
-    const h=window.visualViewport.height;
-    const off=window.visualViewport.offsetTop;
-    document.querySelectorAll('.chat-overlay').forEach(el=>{
-      el.style.height=h+'px';
-      el.style.top=off+'px';
-    });
-  });
-  window.visualViewport.addEventListener('scroll',()=>{
-    const off=window.visualViewport.offsetTop;
-    document.querySelectorAll('.chat-overlay').forEach(el=>{
-      el.style.top=off+'px';
-    });
-  });
 }
 
 // ── Venue Coordinates & Shadow Data ──
@@ -655,7 +635,7 @@ function renderWelcome(){
     const favCount=favourites.length;
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:12px">v9</p>
+      <p style="font-size:9px;color:#333;margin-bottom:12px">v10</p>
       <div class="cat-stack">
         ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
         <div style="height:6px"></div>
@@ -783,15 +763,13 @@ function renderLightbox(){
 // Chat
 // ═══════════════════════════════════════
 function renderChat(){
-  const p=S.chatPlace;if(!p){document.getElementById("co")?.remove();return;}
-  let el=document.getElementById("co");
-  if(!el){el=document.createElement("div");el.id="co";el.className="chat-overlay";document.body.appendChild(el);}
+  const p=S.chatPlace;if(!p){S.screen=S.results?"results":"welcome";render();return;}
   let mh=S.chatMsgs.length===0?`<p class="chat-empty">Ask me anything about ${esc(p.name)}...</p>`
     :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
   if(S.chatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
-  el.innerHTML=`<div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeChat()">✕</button></div>
+  app.innerHTML=`<div style="height:100dvh;height:100%;display:flex;flex-direction:column;background:#000;overflow:hidden"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeChat()">✕</button></div>
     <div class="chat-msgs" id="cs">${mh}</div>
-    <div class="chat-input-bar"><input class="input" style="flex:1;min-width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChat()"><button class="btn active" onclick="sendChat()" ${S.chatLoading?"disabled":""}>→</button></div>`;
+    <div class="chat-input-bar"><input class="input" style="flex:1;min-width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChat()"><button class="btn active" onclick="sendChat()" ${S.chatLoading?"disabled":""}>→</button></div></div>`;
   const sc=document.getElementById("cs");if(sc)sc.scrollTop=sc.scrollHeight;
 }
 async function sendChat(){
@@ -807,7 +785,7 @@ async function sendChat(){
   S.chatLoading=false;renderChat();
 }
 function openChat(i){S.chatPlace=S.results.places[i];S.chatMsgs=[];S.chatLoading=false;renderChat();}
-function closeChat(){S.chatPlace=null;document.getElementById("co")?.remove();}
+function closeChat(){S.chatPlace=null;renderResults();}
 
 // ═══════════════════════════════════════
 // Settings
@@ -820,14 +798,12 @@ function closeChat(){S.chatPlace=null;document.getElementById("co")?.remove();}
 function openSpudChat(){renderSpudChat();}
 
 function renderSpudChat(){
-  let el=document.getElementById("spud-co");
-  if(!el){el=document.createElement("div");el.id="spud-co";el.className="chat-overlay";document.body.appendChild(el);}
   let mh=spudChatHistory.length===0?`<p class="chat-empty">Ask me anything — pubs, restaurants, days out, what to do when it rains...</p>`
     :spudChatHistory.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
   if(S.spudChatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Spud is thinking...</p>`;
-  el.innerHTML=`<div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3>${spudChatHistory.length?`<p style="cursor:pointer" onclick="clearSpudChat()">Clear history</p>`:""}</div><button class="chat-close" onclick="closeSpudChat()">✕</button></div>
+  app.innerHTML=`<div style="height:100dvh;height:100%;display:flex;flex-direction:column;background:#000;overflow:hidden"><div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3>${spudChatHistory.length?`<p style="cursor:pointer" onclick="clearSpudChat()">Clear history</p>`:""}</div><button class="chat-close" onclick="closeSpudChat()">✕</button></div>
     <div class="chat-msgs" id="scm">${mh}</div>
-    <div class="chat-input-bar"><input class="input" style="flex:1;min-width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div>`;
+    <div class="chat-input-bar"><input class="input" style="flex:1;min-width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div></div>`;
   const sc=document.getElementById("scm");if(sc)sc.scrollTop=sc.scrollHeight;
 }
 
@@ -858,7 +834,7 @@ function clearSpudChat(){
   spudChatHistory=[];saveSpudChat(spudChatHistory);renderSpudChat();
 }
 
-function closeSpudChat(){document.getElementById("spud-co")?.remove();}
+function closeSpudChat(){S.screen="welcome";S.cat=null;render();}
 
 // ═══════════════════════════════════════
 // Favourites
