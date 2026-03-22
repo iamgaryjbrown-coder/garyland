@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🪲 GaryLand v14</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>🪲 GaryLand v15</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -649,7 +649,7 @@ function renderWelcome(){
     const favCount=favourites.length;
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:12px">v14</p>
+      <p style="font-size:9px;color:#333;margin-bottom:12px">v15</p>
       <div class="cat-stack">
         ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
         <div style="height:6px"></div>
