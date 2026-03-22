@@ -28,7 +28,7 @@ input::placeholder{color:#5a5548}
 .chip{padding:6px 14px;border-radius:20px;border:1px solid #2a2826;background:transparent;color:#6a645a;font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif}
 .chip.on{border:1.5px solid #d4a853;background:rgba(212,168,83,0.12);color:#d4a853;font-weight:600}
 .input{width:100%;padding:12px 16px;border-radius:12px;border:1px solid #2a2826;background:#1a1917;color:#e8e2d6;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
-.card{background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid #2a2826;animation:fade-up 0.4s ease both;max-width:100%;min-width:0}
+.card{background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid #2a2826;animation:fade-up 0.4s ease both;width:100%;max-width:100%;min-width:0}
 .card-head{padding:14px 14px 0;display:flex;justify-content:space-between;align-items:flex-start}
 .card-name{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:#e8e2d6;overflow-wrap:break-word}
 .card-addr{font-size:12px;color:#6a645a;margin-top:2px}
@@ -90,10 +90,10 @@ input[type="range"]{accent-color:#d4a853}
 .shadow-map-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,14,12,0.6);z-index:500;font-size:12px;color:#8a8478;pointer-events:none}
 
 /* ── Sun Controls Bar (results) ── */
-.sun-controls{background:#1a1917;border:1px solid #2a2826;border-radius:12px;padding:12px 16px;margin-bottom:16px}
-.sun-controls-row{display:flex;align-items:center;gap:10px}
-.sun-controls-row input[type="date"]{background:#0f0e0c;border:1px solid #2a2826;color:#d4a853;border-radius:8px;padding:6px 10px;font-size:13px;font-family:'DM Sans',sans-serif}
-.sun-controls-row input[type="range"]{flex:1}
+.sun-controls{background:#1a1917;border:1px solid #2a2826;border-radius:12px;padding:12px 16px;margin-bottom:16px;overflow:hidden}
+.sun-controls-row{display:flex;align-items:center;gap:8px;overflow:hidden}
+.sun-controls-row input[type="date"]{background:#0f0e0c;border:1px solid #2a2826;color:#d4a853;border-radius:8px;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;flex-shrink:0;max-width:130px}
+.sun-controls-row input[type="range"]{flex:1;min-width:0}
 
 /* ── Map Popup ── */
 .map-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;display:flex;flex-direction:column}
@@ -422,21 +422,24 @@ function initShadowMap(i,lat,lng){
   // Show loading
   const loadEl=document.getElementById('smap-load-'+i);
 
-  // Fetch buildings
-  fetchBuildings(lat,lng,50).then(buildings=>{
-    cardBuildings[i]=buildings;
-    if(loadEl)loadEl.style.display='none';
+  // Fetch buildings — stagger requests to avoid Overpass rate limiting
+  const delay=i*500;
+  setTimeout(()=>{
+    fetchBuildings(lat,lng,50).then(buildings=>{
+      cardBuildings[i]=buildings;
+      if(loadEl)loadEl.style.display='none';
 
-    // Draw buildings
-    for(const b of buildings){
-      L.polygon(b.coords,{color:'#555',fillColor:'#444',fillOpacity:0.7,weight:1}).addTo(buildingLayers[i]);
-    }
+      // Draw buildings
+      for(const b of buildings){
+        L.polygon(b.coords,{color:'#555',fillColor:'#444',fillOpacity:0.7,weight:1}).addTo(buildingLayers[i]);
+      }
 
-    // Draw initial shadows
-    updateShadowMap(i);
-  }).catch(()=>{
-    if(loadEl)loadEl.style.display='none';
-  });
+      // Draw initial shadows
+      updateShadowMap(i);
+    }).catch(()=>{
+      if(loadEl)loadEl.style.display='none';
+    });
+  },delay);
 }
 
 function updateShadowMap(i){
@@ -535,12 +538,12 @@ function renderResults(){
   for(const k of Object.keys(shadowMaps)){try{shadowMaps[k].remove();}catch(e){}}
   shadowMaps={};shadowLayers={};buildingLayers={};cardBuildings={};cardCoords={};cardPhotos={};
 
-  let h=`<div style="position:fixed;inset:0;background:#0f0e0c;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;z-index:10"><div style="max-width:480px;margin:0 auto;padding:20px 16px 60px;overflow:hidden">
+  let h=`<div style="position:fixed;inset:0;background:#0f0e0c;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;z-index:10;width:100%"><div style="max-width:480px;width:100%;margin:0 auto;padding:20px 16px 60px;overflow-x:hidden">
     <button class="back-btn" onclick="goBack()">← Back to search</button>
     <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
     <p style="font-size:13px;color:#6a645a;margin-bottom:16px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>`;
 
-  h+=`<div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px">`;
+  h+=`<div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px;overflow-x:hidden">`;
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
     h+=`<div class="card" style="animation-delay:${i*0.08}s">
