@@ -41,7 +41,7 @@ input::placeholder{color:#5a5548}
 .badge-high{background:rgba(45,212,191,0.13);color:#2dd4bf}
 .badge-mid{background:rgba(212,168,83,0.13);color:#d4a853}
 .badge-low{background:rgba(229,115,115,0.13);color:#e57373}
-.photo-strip{display:flex;gap:6px;overflow-x:auto;padding:12px 12px 8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.photo-strip{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:12px 12px 8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;max-width:100%}
 .photo-strip img{height:130px;min-width:160px;max-width:220px;object-fit:cover;border-radius:8px;scroll-snap-align:start;flex-shrink:0;cursor:pointer;transition:opacity 0.15s}
 .photo-strip img:active{opacity:0.7}
 .photo-shimmer{height:130px;min-width:160px;border-radius:8px;flex-shrink:0;background:linear-gradient(90deg,#1a1917 25%,#2a2826 50%,#1a1917 75%);background-size:200% 100%;animation:shimmer 1.5s ease-in-out infinite}
@@ -308,6 +308,9 @@ function loadCardPhotos(i,name,addr){
       if(S.query?.cat?.needsSun){
         initShadowMap(i,result.lat,result.lng);
       }
+    } else {
+      // No geometry — hide shadow map for this card
+      hideShadowMap(i);
     }
     // Render photos
     const el=document.getElementById("ph-"+i);
@@ -315,7 +318,18 @@ function loadCardPhotos(i,name,addr){
     if(!result.photos.length){el.style.display="none";return;}
     cardPhotos[i]=result.photos;
     el.innerHTML=result.photos.map((u,j)=>`<img src="${u}" alt="photo" loading="lazy" onclick="openLightbox(${i},${j})">`).join("");
-  }).catch(()=>{const el=document.getElementById("ph-"+i);if(el)el.style.display="none";});
+  }).catch(()=>{
+    hideShadowMap(i);
+    const el=document.getElementById("ph-"+i);if(el)el.style.display="none";
+  });
+}
+function hideShadowMap(i){
+  const wrap=document.getElementById('smap-'+i)?.parentElement;
+  if(wrap)wrap.style.display='none';
+  // Also hide the sun controls above it
+  if(wrap?.previousElementSibling?.classList?.contains('sun-controls')){
+    wrap.previousElementSibling.style.display='none';
+  }
 }
 
 // ═══════════════════════════════════════
@@ -326,12 +340,17 @@ async function fetchBuildings(lat,lng,radiusM){
   const dlng=radiusM/(111320*Math.cos(lat*RAD));
   const bbox=`${lat-dlat},${lng-dlng},${lat+dlat},${lng+dlng}`;
   const query=`[out:json][timeout:15];way["building"](${bbox});out body;>;out skel qt;`;
-  try{
-    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(query)});
-    if(!r.ok)return[];
-    const data=await r.json();
-    return parseBuildings(data);
-  }catch(e){return[];}
+  const servers=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+  for(const server of servers){
+    try{
+      const r=await fetch(server,{method:'POST',body:'data='+encodeURIComponent(query)});
+      if(!r.ok)continue;
+      const data=await r.json();
+      const buildings=parseBuildings(data);
+      if(buildings.length>0)return buildings;
+    }catch(e){continue;}
+  }
+  return[];
 }
 
 function parseBuildings(data){
@@ -555,7 +574,7 @@ function renderResults(){
   for(const k of Object.keys(shadowMaps)){try{shadowMaps[k].remove();}catch(e){}}
   shadowMaps={};shadowLayers={};buildingLayers={};cardBuildings={};cardCoords={};cardPhotos={};
 
-  let h=`<div style="position:fixed;inset:0;background:#0f0e0c;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;z-index:10;width:100%;touch-action:pan-y"><div style="max-width:480px;margin:0 auto;padding:20px 16px 60px;overflow:hidden">
+  let h=`<div style="position:fixed;inset:0;background:#0f0e0c;overflow-y:scroll;overflow-x:hidden;z-index:10;overscroll-behavior:none"><div style="position:relative;width:100%;overflow:hidden"><div style="max-width:480px;margin:0 auto;padding:20px 16px 60px">
     <button class="back-btn" onclick="goBack()">← Back to search</button>
     <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
     <p style="font-size:13px;color:#6a645a;margin-bottom:16px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>`;
@@ -588,7 +607,7 @@ function renderResults(){
       ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
       <button class="btn" style="width:100%;margin-top:12px" onclick="openChat(${i})">💬 Tell me more</button></div></div>`;
   });
-  h+=`</div></div></div>`;
+  h+=`</div></div></div></div>`;
   app.innerHTML=h;
 
   // Load photos + geometry (which triggers shadow maps for sun categories)
