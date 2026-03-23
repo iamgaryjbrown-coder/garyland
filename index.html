@@ -857,13 +857,15 @@ function renderChatVenues(places,textBefore){
   if(textBefore.trim())h+=`<div class="chat-bubble chat-bot">${escBr(stripMd(textBefore.trim()))}</div>`;
   places.forEach(p=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
+    const addr=esc(p.address||'');
+    const name=esc(p.name);
+    const mapQ=p.google_maps_query||p.name;
     h+=`<div class="card" style="margin:4px 0;animation:none">
-      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}</div><div class="card-addr" style="color:#7dbd7d;font-size:12px">${esc(p.address||'')}</div></div>
+      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${name}</div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="showMapPopup('${name.replace(/'/g,"\\'")}','${addr.replace(/'/g,"\\'")}',null,null)">${addr}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>
       <div class="card-body"><p class="card-summary">${esc(p.summary||'')}</p>
       ${p.sun_verdict?`<p class="sun-verdict">☀️ ${esc(p.sun_verdict)}</p>`:""}
-      ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
-      ${p.google_maps_query?`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.google_maps_query)}" target="_blank" style="display:inline-block;margin-top:8px;font-size:12px;color:#7dbd7d">📍 Open in Maps</a>`:""}</div></div>`;
+      ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}</div></div>`;
   });
   return h;
 }
