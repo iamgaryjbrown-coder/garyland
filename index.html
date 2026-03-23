@@ -377,6 +377,33 @@ function getPhotosAndGeometry(name,addr){
     });
   });
 }
+// ── Google Places Nearby Search ──
+const CAT_TYPE={sun_drink:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant",stay:"lodging"};
+function parseRange(r){return r==="500m"?500:r==="1km"?1000:r==="2km"?2000:5000;}
+function googleNearbySearch(lat,lng,radiusM,type){
+  return new Promise(res=>{
+    if(!plSvc){res([]);return;}
+    plSvc.nearbySearch({
+      location:new google.maps.LatLng(lat,lng),
+      radius:radiusM,
+      type:type
+    },(results,status)=>{
+      if(status!==google.maps.places.PlacesServiceStatus.OK||!results){res([]);return;}
+      res(results.slice(0,10).map(r=>({
+        name:r.name||"",
+        address:r.vicinity||"",
+        gRating:r.rating||null,
+        totalRatings:r.user_ratings_total||0,
+        priceLevel:r.price_level,
+        types:(r.types||[]).slice(0,5),
+        isOpen:r.opening_hours?.isOpen?.()??null,
+        lat:r.geometry?.location?.lat(),
+        lng:r.geometry?.location?.lng()
+      })));
+    });
+  });
+}
+
 let cardPhotos={};
 function loadCardPhotos(i,name,addr){
   if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return;
@@ -984,18 +1011,49 @@ async function doSearch(){
     }catch(e){}
   }
 
-  // SunCalc — use actual coordinates, fallback to London
+  // SunCalc — check if sun is up (for sun categories)
   let sunCtx="";
   if(q.sun){
     const lat=S.userLat||51.5,lng=S.userLng||-0.12;
     const d=new Date(q.sun.date+"T"+q.sun.time+":00"),pos=getSunPosition(d,lat,lng);
-    sunCtx=`\nSun at ${q.loc}: azimuth ${pos.azimuth.toFixed(0)}°, altitude ${pos.altitude.toFixed(1)}°. User wants OUTSIDE IN DIRECT SUNLIGHT. Evaluate outdoor seating orientation. Be honest.`;
+    // Sun below horizon — no point searching
+    if(pos.altitude<=0){
+      clearInterval(S.loadInterval);S.loadInterval=null;
+      S.error="It's dark out there! No sunshine to be found right now. Try adjusting the time, or search for a Great Pub or Great Restaurant instead — they don't need the sun. 🌙";
+      S.searching=false;releaseWakeLock();renderLoading();return;
+    }
+    sunCtx=`\nSun at ${q.loc}: azimuth ${pos.azimuth.toFixed(0)}°, altitude ${pos.altitude.toFixed(1)}°. User wants OUTSIDE IN DIRECT SUNLIGHT. Evaluate outdoor seating orientation. Be honest — if a place faces the wrong way for this sun angle, say so.`;
   }
+
+  // Google Places nearbySearch — find real venues
+  const radiusM=parseRange(S.range);
+  const gType=CAT_TYPE[cat.id]||"restaurant";
+  let gPlaces=[];
+  if(S.userLat&&plSvc){
+    try{gPlaces=await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);}catch(e){}
+  }
+
+  // Build prompt — either review Google results or ask Spud to search
   const prefStr=q.prefs.length?`\nPrefs: ${q.prefs.join(", ")}.`:"";
   const catDesc={sun_drink:"pubs/bars with outdoor seating",sun_eat:"restaurants with outdoor dining",pub:"great pubs",eat:"great restaurants",stay:"places to stay"}[q.cat.id]||"places";
   const rangeStr=S.range||"5km";
-  const rangeNote=S.range?`\nIMPORTANT: The user has set a strict ${rangeStr} radius. Include EVERYTHING within this radius regardless of quality. If a place is rubbish, include it anyway but say it's rubbish. Better to show a nearby 3/10 than miss it. Return fewer results rather than including anything outside ${rangeStr}.`:"";
-  const prompt=`Find 4-5 best ${catDesc} within ${rangeStr} of "${q.loc}".${prefStr}${sunCtx}${rangeNote}\n\nCRITICAL DISTANCE RULE: Every result MUST be within ${rangeStr} of "${q.loc}". Do NOT suggest anywhere further away. Return fewer results if needed.\n\nDo 1-2 web searches. Return ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only real places — never invent one.`;
+  let prompt;
+
+  if(gPlaces.length>0){
+    // Google found venues — ask Spud to review them
+    const listing=gPlaces.map((r,i)=>{
+      let line=`${i+1}. ${r.name} — ${r.address}`;
+      if(r.gRating)line+=` (Google: ${r.gRating}/5 from ${r.totalRatings} reviews)`;
+      if(r.priceLevel!=null)line+=` ${"£".repeat(r.priceLevel+1)}`;
+      if(r.isOpen===true)line+=" [open now]";
+      if(r.isOpen===false)line+=" [currently closed]";
+      return line;
+    }).join("\n");
+    prompt=`Here are ${gPlaces.length} ${catDesc} within ${rangeStr} of "${q.loc}" from Google:\n\n${listing}${prefStr}${sunCtx}\n\nReview ALL of them. Rate each honestly — if somewhere is rubbish, say so. Don't filter any out.\n\nReturn ONLY JSON:\n{"places":[{"name":"<exact name from list>","address":"<full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nInclude every venue from the list. Be opinionated.`;
+  } else {
+    // No Google results — ask Spud to search (fallback)
+    prompt=`Find ${catDesc} within ${rangeStr} of "${q.loc}".${prefStr}${sunCtx}\n\nSearch the web. Return ALL real places you find — don't filter by quality. Rate each honestly.\n\nReturn ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only real places — never invent one.`;
+  }
 
   try{
     const text=await callClaude([{role:"user",content:prompt}],SPUD_SYSTEM);
