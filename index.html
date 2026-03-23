@@ -329,7 +329,7 @@ function closeMapPopup(){
 // ═══════════════════════════════════════
 async function callClaude(messages,system){
   if(!WORKER_URL||WORKER_URL.includes("PASTE")){throw new Error("Worker URL not configured — edit the HTML config section");}
-  const body={model:"claude-sonnet-4-20250514",max_tokens:2500,messages,tools:[{type:"web_search_20250305",name:"web_search"}]};
+  const body={model:"openclaw",max_tokens:2500,messages};
   if(system)body.system=system;
   const r=await fetch(WORKER_URL,{
     method:"POST",
@@ -337,7 +337,7 @@ async function callClaude(messages,system){
     body:JSON.stringify(body)
   });
   if(!r.ok){
-    if(r.status===401)throw new Error("Invalid Anthropic key — check ⚙️");
+    if(r.status===401)throw new Error("Spud auth failed — check worker secrets");
     if(r.status===429)throw new Error("Rate limited — wait a moment");
     throw new Error("API error "+r.status);
   }
