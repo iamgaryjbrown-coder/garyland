@@ -125,8 +125,7 @@ input[type="range"]{accent-color:#d4a853}
 const WORKER_URL = "https://garyland-api.garyland.workers.dev";
 const GOOGLE_KEY = "AIzaSyCTUs24auwcikig1MDHuJFcPAKRUj3WajQ";
 
-// ── Spud Personality ──
-const SPUD_SYSTEM = `You are Spud — the Brown family's opinionated, knowledgeable AI concierge inside GaryLand. You have strong opinions about pubs, restaurants, and places. You speak like a trusted mate who knows their stuff — warm, direct, occasionally cheeky, never bland or corporate. If somewhere is average, say so. If it's brilliant, get excited about it. You know the family likes: proper cask ales, good wine, interesting food, dogs welcome, character over chains, sun traps, and places with soul. You'd rather send someone to a rough-round-the-edges local gem than a polished but soulless gastropub. Be honest, be specific, be useful.`;
+// ── Spud Personality lives in SOUL.md on the VPS — do not duplicate here ──
 
 // ── Dynamic Leaflet Loader ──
 let leafletReady=false,leafletPromise=null;
@@ -833,7 +832,7 @@ async function sendChat(){
   const p=S.chatPlace,q=S.query;
   S.chatMsgs.push({role:"user",content:text});S.chatLoading=true;renderChat();
   try{
-    const sys=SPUD_SYSTEM+`\n\nYou're currently discussing "${p.name}" at ${p.address} with the user. Location context: ${q.loc}.${q.sun?` They want sun at ${q.sun.time} on ${q.sun.date}.`:""} Be helpful and specific about this place. You CANNOT show images.`;
+    const sys=`You are currently in GaryLand venue chat mode. The user tapped "Tell me more" on a venue card. Venue: "${p.name}" at ${p.address}. Location context: ${q.loc}.${q.sun?` They want sun at ${q.sun.time} on ${q.sun.date}.`:""} Be helpful and specific about this place. Plain text only — no markdown. You CANNOT show images.`;
     const reply=await callClaude(S.chatMsgs.map(m=>({role:m.role,content:m.content})),sys);
     S.chatMsgs.push({role:"assistant",content:reply||"No response."});
   }catch(e){S.chatMsgs.push({role:"assistant",content:e.message});}
@@ -936,7 +935,7 @@ async function sendSpudChat(){
   try{
     const locParts=[];if(S.loc)locParts.push(`The user is in/near "${S.loc}".`);if(S.userLat)locParts.push(`GPS: ${S.userLat.toFixed(4)},${S.userLng.toFixed(4)}.`);
     const locCtx=locParts.length?" "+locParts.join(" ")+" Always recommend places close to this location — within walking or short driving distance.":"";
-    const sys=SPUD_SYSTEM+`\n\nThis is the freeform GaryLand chat. The user can ask you anything about places, food, drink, days out, things to do.${locCtx} Be conversational and helpful. If they ask you to find specific places, return them as JSON in this format: {"places":[{"name":"...","address":"...","rating":1-10,"summary":"1-2 sentences","price_level":"\u00a3/\u00a3\u00a3/\u00a3\u00a3\u00a3","highlights":["tag"],"google_maps_query":"name+area"}]} — the app will render these as nice cards. For general chat that is NOT about finding places, just respond in plain text. NEVER use markdown formatting — no asterisks, no bold, no bullet points. Write in plain conversational English like you're texting a mate. Keep responses concise.`;
+    const sys=`You are in GaryLand freeform chat mode. The user can ask you anything about places, food, drink, days out, things to do.${locCtx} Be conversational and helpful. If they ask you to find specific places, return them as JSON in this format: {"places":[{"name":"...","address":"...","rating":1-10,"summary":"1-2 sentences","price_level":"£/££/£££","highlights":["tag"],"google_maps_query":"name+area"}]} — the app will render these as nice cards. For general chat that is NOT about finding places, just respond in plain text. NEVER use markdown formatting — no asterisks, no bold, no bullet points. Write in plain conversational English. Keep responses concise.`;
     // Send last 20 messages for context (keep token use reasonable)
     const msgs=spudChatHistory.slice(-20).map(m=>({role:m.role,content:m.content}));
     const reply=await callClaude(msgs,sys);
@@ -1138,7 +1137,7 @@ async function doSearch(){
   }
 
   try{
-    const text=await callClaude([{role:"user",content:prompt}],SPUD_SYSTEM);
+    const text=await callClaude([{role:"user",content:prompt}],null);
     const m=text.match(/\{[\s\S]*"places"[\s\S]*\}/);
     if(!m)throw new Error("No results — try different location");
     const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
