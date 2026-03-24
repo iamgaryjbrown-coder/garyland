@@ -327,10 +327,11 @@ function closeMapPopup(){
 // ═══════════════════════════════════════
 // Claude API
 // ═══════════════════════════════════════
-async function callClaude(messages,system){
+async function callClaude(messages,system,sessionId){
   if(!WORKER_URL||WORKER_URL.includes("PASTE")){throw new Error("Worker URL not configured — edit the HTML config section");}
   const body={model:"openclaw",max_tokens:2500,messages};
   if(system)body.system=system;
+  if(sessionId)body.sessionId=sessionId;
   const r=await fetch(WORKER_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -833,7 +834,8 @@ async function sendChat(){
   S.chatMsgs.push({role:"user",content:text});S.chatLoading=true;renderChat();
   try{
     const sys=`You are currently in GaryLand venue chat mode. The user tapped "Tell me more" on a venue card. Venue: "${p.name}" at ${p.address}. Location context: ${q.loc}.${q.sun?` They want sun at ${q.sun.time} on ${q.sun.date}.`:""} Be helpful and specific about this place. Plain text only — no markdown. You CANNOT show images.`;
-    const reply=await callClaude(S.chatMsgs.map(m=>({role:m.role,content:m.content})),sys);
+    const venueKey="venue-"+encodeURIComponent(p.name).slice(0,30);
+    const reply=await callClaude(S.chatMsgs.map(m=>({role:m.role,content:m.content})),sys,venueKey);
     S.chatMsgs.push({role:"assistant",content:reply||"No response."});
   }catch(e){S.chatMsgs.push({role:"assistant",content:e.message});}
   S.chatLoading=false;renderChat();
@@ -938,7 +940,7 @@ async function sendSpudChat(){
     const sys=`You are in GaryLand freeform chat mode. The user can ask you anything about places, food, drink, days out, things to do.${locCtx} Be conversational and helpful. If they ask you to find specific places, return them as JSON in this format: {"places":[{"name":"...","address":"...","rating":1-10,"summary":"1-2 sentences","price_level":"£/££/£££","highlights":["tag"],"google_maps_query":"name+area"}]} — the app will render these as nice cards. For general chat that is NOT about finding places, just respond in plain text. NEVER use markdown formatting — no asterisks, no bold, no bullet points. Write in plain conversational English. Keep responses concise.`;
     // Send last 20 messages for context (keep token use reasonable)
     const msgs=spudChatHistory.slice(-20).map(m=>({role:m.role,content:m.content}));
-    const reply=await callClaude(msgs,sys);
+    const reply=await callClaude(msgs,sys,"garyland-chat");
     spudChatHistory.push({role:"assistant",content:reply||"Sorry, I drew a blank there. Try asking again?"});
     saveSpudChat(spudChatHistory);
   }catch(e){
@@ -1137,7 +1139,7 @@ async function doSearch(){
   }
 
   try{
-    const text=await callClaude([{role:"user",content:prompt}],null);
+    const text=await callClaude([{role:"user",content:prompt}],null,"garyland-search");
     const m=text.match(/\{[\s\S]*"places"[\s\S]*\}/);
     if(!m)throw new Error("No results — try different location");
     const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
