@@ -857,14 +857,14 @@ function chatMapPopup(name,addr){
   if(!window.google?.maps){window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(name+", "+addr),"_blank");return;}
   const gc=new google.maps.Geocoder();
   gc.geocode({address:name+", "+addr},(r,st)=>{
-    const lat=st==="OK"&&r?.[0]?r[0].geometry.location.lat():null;
-    const lng=st==="OK"&&r?.[0]?r[0].geometry.location.lng():null;
-    showMapPopup(name,addr,lat,lng);
+    if(st==="OK"&&r?.[0]){showMapPopup(name,addr,r[0].geometry.location.lat(),r[0].geometry.location.lng());}
+    else{window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(name+", "+addr),"_blank");}
   });
 }
 function loadChatPhotos(idx,name,addr){
   if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return;
-  loadMaps(GOOGLE_KEY).then(()=>getPhotosAndGeometry(name,addr)).then(result=>{
+  const timer=setTimeout(()=>{const el=document.getElementById("cph-"+idx);if(el)el.style.display="none";},5000);
+  loadMaps(GOOGLE_KEY).then(()=>getPhotosAndGeometry(name,addr)).then(result=>{clearTimeout(timer);
     const el=document.getElementById("cph-"+idx);if(!el)return;
     if(!result.photos.length){el.style.display="none";return;}
     chatCardPhotos[idx]=result.photos;
