@@ -925,7 +925,7 @@ function renderChatVenues(places,textBefore){
   });
   return h;
 }
-function openSpudChat(){spudSessionStart=spudChatHistory.length;renderSpudChat();}
+function openSpudChat(){spudSessionStart=0;renderSpudChat();}
 
 function renderSpudChat(){
   let mh=spudChatHistory.length===0?`<p class="chat-empty">Ask me anything — pubs, restaurants, days out, what to do when it rains...</p>`
