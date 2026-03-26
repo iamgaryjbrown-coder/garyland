@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>🪲 GaryLand v15</title>
+<title>🪲 GaryLand v16</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -854,6 +854,39 @@ async function sendChat(){
 function openChat(i){S.chatPlace=S.results.places[i];S.chatMsgs=[];S.chatLoading=false;renderChat();}
 function closeChat(){S.chatPlace=null;renderResults();}
 
+// ── Chat from Spud freeform results ──
+let spudChatSource=null; // Track if chat was opened from Spud results
+function openChatFromSpud(i){
+  const p=chatPlaces[i];if(!p)return;
+  S.chatPlace={name:p.name,address:p.address||''};
+  S.chatMsgs=[];S.chatLoading=false;
+  spudChatSource='spud';
+  renderChatFromSpud();
+}
+function renderChatFromSpud(){
+  const p=S.chatPlace;if(!p){closeSpudVenueChat();return;}
+  let mh=S.chatMsgs.length===0?`<p class="chat-empty">Ask me anything about ${esc(p.name)}...</p>`
+    :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
+  if(S.chatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
+  app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeSpudVenueChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="cs"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChatFromSpud()"><button class="btn active" style="flex-shrink:0" onclick="sendChatFromSpud()" ${S.chatLoading?"disabled":""}>→</button></div></div></div>`;
+  const sc=document.getElementById("cs");if(sc)sc.scrollTop=sc.scrollHeight;
+}
+async function sendChatFromSpud(){
+  const inp=document.getElementById("ci"),text=inp?.value?.trim();
+  if(!text||S.chatLoading)return;inp.value="";
+  const p=S.chatPlace;
+  S.chatMsgs.push({role:"user",content:text});S.chatLoading=true;renderChatFromSpud();
+  try{
+    const locCtx=S.loc?` Location context: ${S.loc}.`:"";
+    const sys=`You are currently in GaryLand venue chat mode. The user tapped "Want to know more?" on a venue card. Venue: "${p.name}" at ${p.address}.${locCtx} Be helpful and specific about this place. Plain text only — no markdown. You CANNOT show images.`;
+    const venueKey="venue-"+encodeURIComponent(p.name).slice(0,30);
+    const reply=await callClaude(S.chatMsgs.map(m=>({role:m.role,content:m.content})),sys,venueKey);
+    S.chatMsgs.push({role:"assistant",content:reply||"No response."});
+  }catch(e){S.chatMsgs.push({role:"assistant",content:e.message});}
+  S.chatLoading=false;renderChatFromSpud();
+}
+function closeSpudVenueChat(){S.chatPlace=null;spudChatSource=null;renderSpudChat();}
+
 // ═══════════════════════════════════════
 // Settings
 // ═══════════════════════════════════════
@@ -921,7 +954,8 @@ function renderChatVenues(places,textBefore){
       <div id="cph-${i}" class="photo-strip"><div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div><div class="photo-shimmer" style="width:180px"></div></div>
       <div class="card-body"><p class="card-summary">${esc(p.summary||'')}</p>
       ${p.sun_verdict?`<p class="sun-verdict">\u2600\ufe0f ${esc(p.sun_verdict)}</p>`:""}
-      ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}</div></div>`;
+      ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
+      <button class="btn" style="width:100%;margin-top:12px" onclick="openChatFromSpud(${i})">💬 Want to know more?</button></div></div>`;
   });
   return h;
 }
