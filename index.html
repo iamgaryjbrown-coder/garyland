@@ -419,6 +419,41 @@ function googleNearbySearch(lat,lng,radiusM,type){
   });
 }
 
+function googleTextSearch(query,lat,lng,radiusM){
+  return new Promise(res=>{
+    if(!plSvc){res([]);return;}
+    const all=[];
+    const mapResult=r=>({
+      name:r.name||"",
+      address:r.formatted_address||r.vicinity||"",
+      place_id:r.place_id||null,
+      gRating:r.rating||null,
+      totalRatings:r.user_ratings_total||0,
+      priceLevel:r.price_level,
+      types:(r.types||[]).slice(0,5),
+      isOpen:r.opening_hours?.isOpen?.()??null,
+      lat:r.geometry?.location?.lat(),
+      lng:r.geometry?.location?.lng()
+    });
+    const fetchPage=(pagination)=>{
+      if(pagination&&pagination.hasNextPage&&all.length<40){
+        setTimeout(()=>pagination.nextPage(),300);
+      }else{
+        res(all);
+      }
+    };
+    plSvc.textSearch({
+      query:query,
+      location:new google.maps.LatLng(lat,lng),
+      radius:radiusM
+    },(results,status,pagination)=>{
+      if(status!==google.maps.places.PlacesServiceStatus.OK||!results){res(all);return;}
+      all.push(...results.map(mapResult));
+      fetchPage(pagination);
+    });
+  });
+}
+
 let cardPhotos={};
 function loadCardPhotos(i,name,addr,placeId){
   if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return;
@@ -1323,8 +1358,10 @@ async function doSearch(){
 
   if(!S.allGPlaces.length&&S.userLat&&plSvc){
     try{
-      // Fetch more than pageSize so pagination works from cache
-      const raw=await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
+      // Use text search for cuisine-specific queries, nearby for generic
+      const raw=foodTypeStr
+        ?await googleTextSearch(foodTypeStr+' restaurant '+q.loc,S.userLat,S.userLng,radiusM)
+        :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
       S.allGPlaces=raw;
     }catch(e){}
   }
