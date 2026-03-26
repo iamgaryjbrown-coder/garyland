@@ -114,6 +114,7 @@ input[type="range"]{accent-color:#d4a853}
 .fav-card-addr{font-size:12px;color:#7dbd7d;margin-top:2px;cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a}
 .fav-card-meta{font-size:11px;color:#5a5548;margin-top:4px}
 .fav-remove{background:none;border:none;font-size:18px;cursor:pointer;padding:2px;color:#e57373;flex-shrink:0}
+.photo-refresh{position:absolute;right:12px;top:12px;width:28px;height:28px;border-radius:50%;background:rgba(26,25,23,0.85);border:1px solid #2a2826;color:#d4a853;font-size:16px;cursor:pointer;z-index:10}
 </style>
 </head>
 <body>
@@ -455,8 +456,10 @@ function googleTextSearch(query,lat,lng,radiusM){
 }
 
 let cardPhotos={};
+let cardInfo={};
 function loadCardPhotos(i,name,addr,placeId){
   if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return;
+  cardInfo[i]={name,addr,placeId};
   const photoPromise=placeId
     ?loadMaps(GOOGLE_KEY).then(()=>new Promise(res=>{
         if(!plSvc){res({photos:[],lat:null,lng:null});return;}
@@ -483,14 +486,28 @@ function loadCardPhotos(i,name,addr,placeId){
     // Render photos
     const el=document.getElementById("ph-"+i);
     if(!el)return;
-    if(!result.photos.length){el.style.display="none";return;}
+    if(!result.photos.length){showPhotoRefresh(i);return;}
     cardPhotos[i]=result.photos;
     el.innerHTML=result.photos.map((u,j)=>`<img src="${u}" alt="photo" loading="lazy" onclick="openLightbox(${i},${j})">`).join("");
   }).catch(()=>{
     hideShadowMap(i);
     if(S.query?.cat?.needsSun)onCoordsReady();
-    const el=document.getElementById("ph-"+i);if(el)el.style.display="none";
+    showPhotoRefresh(i);
   });
+}
+function showPhotoRefresh(i){
+  const el=document.getElementById("ph-"+i);
+  const btn=document.getElementById("ph-refresh-"+i);
+  if(el)el.innerHTML='<p style="color:#5a5548;font-size:12px;padding:8px 12px">Photos unavailable</p>';
+  if(btn)btn.style.display='block';
+}
+function reloadPhotos(i){
+  const info=cardInfo[i];if(!info)return;
+  const el=document.getElementById("ph-"+i);
+  const btn=document.getElementById("ph-refresh-"+i);
+  if(el)el.innerHTML='<div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div>';
+  if(btn)btn.style.display='none';
+  loadCardPhotos(i,info.name,info.addr,info.placeId);
 }
 function hideShadowMap(i){
   const wrap=document.getElementById('smap-'+i)?.parentElement;
@@ -857,7 +874,7 @@ function renderResults(){
       </div>`;
     }
 
-    h+=`<div id="ph-${i}" class="photo-strip"><div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div><div class="photo-shimmer" style="width:180px"></div></div>
+    h+=`<div style="position:relative"><div id="ph-${i}" class="photo-strip"><div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div><div class="photo-shimmer" style="width:180px"></div></div><button id="ph-refresh-${i}" class="photo-refresh" onclick="reloadPhotos(${i})" style="display:none">↻</button></div>
       <div class="card-body"><p class="card-summary">${esc(p.summary)}</p>
       ${p.sun_verdict?`<p class="sun-verdict">☀️ ${esc(p.sun_verdict)}</p>`:""}
       ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
