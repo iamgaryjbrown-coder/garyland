@@ -793,7 +793,9 @@ function renderWelcome(){
 
 function renderLoading(){
   const msgs=LOAD_MSGS[getMsgType(S.query?.cat?.id)]||LOAD_MSGS.pub;
-  app.innerHTML=`<div class="loading-screen">${BEETLE}
+  app.innerHTML=`<div class="loading-screen">
+    <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:12px" src="garyland-title.mp4"></video>
+    ${BEETLE}
     <p style="margin-top:20px;font-size:15px;color:${S.error?"#e57373":"#d4a853"};font-weight:600;min-height:24px;max-width:320px;padding:0 16px" id="lm">${S.error||msgs[S.loadMsgIdx%msgs.length]}</p>
     ${S.error?'<button class="btn active" style="margin-top:16px" onclick="goBack()">← Go Back</button>':""}</div>`;
   if(!S.error&&!S.loadInterval){
