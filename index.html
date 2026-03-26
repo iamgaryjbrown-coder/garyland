@@ -325,119 +325,6 @@ function closeMapPopup(){
 }
 
 // ═══════════════════════════════════════
-// Multi-Venue Map (See All on Map)
-// ═══════════════════════════════════════
-let multiMapInstance=null;
-let multiMapVenues=[];  // Store venues for the current multi-map view
-
-function showMultiVenueMap(venues){
-  document.getElementById('multi-map')?.remove();
-  if(multiMapInstance){multiMapInstance.remove();multiMapInstance=null;}
-  multiMapVenues=venues;
-
-  const el=document.createElement('div');
-  el.id='multi-map';
-  el.className='map-popup-overlay';
-  el.innerHTML=`
-    <div class="map-popup-header">
-      <h3>📍 ${venues.length} places</h3>
-      <button class="map-popup-close" onclick="closeMultiMap()">✕</button>
-    </div>
-    <div id="multi-map-container" class="map-popup-map"></div>
-    <div id="multi-map-info" style="padding:12px 16px;background:#1a1917;border-top:1px solid #2a2826;min-height:60px;display:flex;align-items:center;justify-content:center">
-      <p style="color:#6a645a;font-size:13px">Tap a pin for details</p>
-    </div>`;
-  document.body.appendChild(el);
-
-  loadLeaflet().then(()=>{
-    setTimeout(async()=>{
-      // Geocode all venues to get coordinates
-      const coords=[];
-      for(const v of venues){
-        let lat=null,lng=null;
-        if(window.google?.maps){
-          try{
-            const result=await new Promise(res=>{
-              const gc=new google.maps.Geocoder();
-              gc.geocode({address:v.name+', '+(v.address||'')},(r,st)=>{
-                if(st==='OK'&&r?.[0]){
-                  res({lat:r[0].geometry.location.lat(),lng:r[0].geometry.location.lng()});
-                }else{res(null);}
-              });
-            });
-            if(result){lat=result.lat;lng=result.lng;}
-          }catch(e){}
-        }
-        coords.push({...v,lat,lng});
-      }
-
-      // Filter to only venues with coords
-      const withCoords=coords.filter(c=>c.lat&&c.lng);
-      if(!withCoords.length){
-        document.getElementById('multi-map-info').innerHTML='<p style="color:#e57373;font-size:13px">Couldn\'t locate venues on map</p>';
-        return;
-      }
-
-      // Calculate bounds
-      let minLat=Infinity,maxLat=-Infinity,minLng=Infinity,maxLng=-Infinity;
-      for(const c of withCoords){
-        if(c.lat<minLat)minLat=c.lat;
-        if(c.lat>maxLat)maxLat=c.lat;
-        if(c.lng<minLng)minLng=c.lng;
-        if(c.lng>maxLng)maxLng=c.lng;
-      }
-
-      // Add user location to bounds if available
-      if(S.userLat&&S.userLng){
-        if(S.userLat<minLat)minLat=S.userLat;
-        if(S.userLat>maxLat)maxLat=S.userLat;
-        if(S.userLng<minLng)minLng=S.userLng;
-        if(S.userLng>maxLng)maxLng=S.userLng;
-      }
-
-      const ctrLat=(minLat+maxLat)/2,ctrLng=(minLng+maxLng)/2;
-      multiMapInstance=L.map('multi-map-container',{zoomControl:false,attributionControl:false}).setView([ctrLat,ctrLng],13);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(multiMapInstance);
-
-      // Fit bounds with padding
-      const bounds=L.latLngBounds([[minLat,minLng],[maxLat,maxLng]]);
-      multiMapInstance.fitBounds(bounds,{padding:[40,40]});
-
-      // Add user location marker (blue)
-      if(S.userLat&&S.userLng){
-        L.marker([S.userLat,S.userLng],{icon:L.divIcon({className:'',html:'<div style="width:12px;height:12px;background:#3b82f6;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(multiMapInstance).bindPopup('<b>You</b>');
-      }
-
-      // Add venue markers (gold)
-      withCoords.forEach((v,i)=>{
-        const marker=L.marker([v.lat,v.lng],{icon:L.divIcon({className:'',html:`<div style="width:28px;height:28px;background:#d4a853;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})}).addTo(multiMapInstance);
-        marker.on('click',()=>showVenueInfo(v,i));
-      });
-
-      setTimeout(()=>{multiMapInstance.invalidateSize();},100);
-    },50);
-  });
-}
-
-function showVenueInfo(v,idx){
-  const bc=v.rating>=8?'badge-high':v.rating>=6?'badge-mid':'badge-low';
-  const enc=encodeURIComponent(v.name+', '+(v.address||''));
-  document.getElementById('multi-map-info').innerHTML=`
-    <div style="flex:1;min-width:0">
-      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:#e8e2d6">${idx+1}. ${esc(v.name)}</div>
-      <div style="font-size:11px;color:#6a645a;margin-top:2px">${esc(v.address||'')}</div>
-    </div>
-    <span class="badge ${bc}" style="margin:0 8px">${v.rating}/10</span>
-    <a href="https://www.google.com/maps/dir/?api=1&destination=${enc}" style="padding:8px 12px;background:#d4a853;color:#000;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">Go</a>`;
-}
-
-function closeMultiMap(){
-  if(multiMapInstance){multiMapInstance.remove();multiMapInstance=null;}
-  document.getElementById('multi-map')?.remove();
-  multiMapVenues=[];
-}
-
-// ═══════════════════════════════════════
 // Claude API
 // ═══════════════════════════════════════
 async function callClaude(messages,system,sessionId){
@@ -1075,20 +962,7 @@ function renderChatVenues(places,textBefore,resetOffset=false){
       ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
       <button class="btn" style="width:100%;margin-top:12px" onclick="openChatFromSpud(${idx})">💬 Want to know more?</button></div></div>`;
   });
-  // Add "See all on map" button after venue cards
-  const mapBtnId='map-btn-'+startIdx;
-  const placesJson=encodeURIComponent(JSON.stringify(places.map(p=>({name:p.name,address:p.address||'',rating:p.rating}))));
-  h+=`<button id="${mapBtnId}" class="btn" style="width:100%;margin-top:8px;border-color:#d4a853;color:#d4a853" data-places="${placesJson}" onclick="openMultiMapFromBtn('${mapBtnId}')">🗺️ See all on map</button>`;
   return h;
-}
-
-function openMultiMapFromBtn(btnId){
-  const btn=document.getElementById(btnId);
-  if(!btn)return;
-  try{
-    const places=JSON.parse(decodeURIComponent(btn.dataset.places||'[]'));
-    if(places.length)showMultiVenueMap(places);
-  }catch(e){console.error('Failed to parse places for map',e);}
 }
 function openSpudChat(){spudSessionStart=0;renderSpudChat();}
 
