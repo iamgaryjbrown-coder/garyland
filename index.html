@@ -730,7 +730,9 @@ function renderWelcome(){
   }
 
   // ── Screen 2b: Food type picker (eat categories) ──
+  console.log('eat check: cat='+S.cat+' results='+S.results+' eval='+(((S.cat==='eat'||S.cat==='sun_eat')&&!S.results)));
   if((S.cat==='eat'||S.cat==='sun_eat')&&!S.results){
+    console.log('INSIDE eat block, rendering food picker');
     const cat=CATS.find(c=>c.id===S.cat);
     app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
       <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat=null;render()">← Back</button>
@@ -774,6 +776,7 @@ function renderWelcome(){
   }
 
   // ── Main menu (has location) ──
+  console.log('FELL THROUGH to main menu');
   app.innerHTML=`<div class="welcome-content">
     <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:8px" src="garyland-title.mp4"></video>
     <p style="font-size:9px;color:#333;margin-bottom:6px">v18</p>
