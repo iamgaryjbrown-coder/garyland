@@ -178,12 +178,9 @@ const getMsgType=id=>id?.includes("sun")?"sun":id==="pub"?"pub":"eat";
 const BEETLE=`<video autoplay loop muted playsinline style="width:120px;height:120px;object-fit:contain" src="beetle.mp4"></video>`;
 
 // ── State ──
-// On fresh app load, always show the opening screen regardless of saved location
-const _freshLoad=!sessionStorage.getItem('gl_session');
-sessionStorage.setItem('gl_session','1');
 let S={
-  screen:_freshLoad?'location':'welcome',
-  cat:null,prefs:[],loc:localStorage.getItem('garyland_last_loc')||"",foodType:null,
+  screen:'location',
+  cat:null,prefs:[],loc:"",foodType:null,
   userLat:null,userLng:null,
   date:new Date().toISOString().slice(0,10),
   timeIdx:Math.round((new Date().getHours()*60+new Date().getMinutes())/15),
