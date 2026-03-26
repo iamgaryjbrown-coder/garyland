@@ -940,9 +940,11 @@ function chatToggleFav(i){
   btn.textContent=isFavourite(p.name,p.address||'')?'\u2665':'\u2661';
 }
 let chatVenueOffset=0; // Track index offset for multiple venue blocks in history
+let lastVenueBlockStart=null; // Track start of most recent venue block for scrolling
 function renderChatVenues(places,textBefore,resetOffset=false){
-  if(resetOffset){chatPlaces=[];chatCardPhotos={};chatVenueOffset=0;}
+  if(resetOffset){chatPlaces=[];chatCardPhotos={};chatVenueOffset=0;lastVenueBlockStart=null;}
   const startIdx=chatVenueOffset;
+  lastVenueBlockStart=startIdx; // Update to track most recent block
   chatPlaces.push(...places);
   chatVenueOffset+=places.length;
   let h='';
@@ -975,11 +977,13 @@ function renderSpudChat(){
   if(S.spudChatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Spud is thinking...</p>`;
   app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3></div><button class="chat-close" onclick="closeSpudChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="scm"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" style="flex-shrink:0" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("scm");
-  // If we have venue results, scroll to first card; otherwise scroll to bottom
-  const firstCard=document.getElementById('cph-0')?.closest('.card');
+  // Scroll to most recent venue block if exists, otherwise bottom
   if(sc){
-    if(firstCard){firstCard.scrollIntoView({behavior:'auto',block:'start'});}
-    else{sc.scrollTop=sc.scrollHeight;}
+    if(lastVenueBlockStart!==null){
+      const latestCard=document.getElementById('cph-'+lastVenueBlockStart)?.closest('.card');
+      if(latestCard){latestCard.scrollIntoView({behavior:'auto',block:'start'});}
+      else{sc.scrollTop=sc.scrollHeight;}
+    }else{sc.scrollTop=sc.scrollHeight;}
   }
   document.querySelectorAll('[id^="cph-"]').forEach(el=>{
     const idx=parseInt(el.id.replace('cph-',''));
