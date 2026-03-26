@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>🪲 GaryLand v17</title>
+<title>🪲 GaryLand v18</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -703,7 +703,7 @@ function renderWelcome(){
   if(S.screen==='location'||!hasLoc){
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:16px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:20px">v17</p>
+      <p style="font-size:9px;color:#333;margin-bottom:20px">v18</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="useCurrentLocation()">📍 Use current location</button>
         <input class="input" id="li" placeholder="Somewhere else..." style="width:100%" onkeydown="if(event.key==='Enter')setLocFromInput()">
@@ -775,7 +775,7 @@ function renderWelcome(){
   // ── Main menu (has location) ──
   app.innerHTML=`<div class="welcome-content">
     <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:8px" src="garyland-title.mp4"></video>
-    <p style="font-size:9px;color:#333;margin-bottom:6px">v17</p>
+    <p style="font-size:9px;color:#333;margin-bottom:6px">v18</p>
     <div style="margin-bottom:20px;text-align:center">
       <p style="font-size:11px;color:#5a5548;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px">Searching</p>
       <p style="font-size:18px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;cursor:pointer" onclick="S.screen='location';render()">📍 ${esc(S.loc)} <span style="font-size:13px;color:#5a5548">✎</span></p>
