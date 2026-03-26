@@ -696,7 +696,6 @@ function render(){
 }
 
 function renderWelcome(){
-  console.log('renderWelcome: screen='+S.screen+' cat='+S.cat+' foodType='+S.foodType+' results='+(S.results?'yes':'null'));
   const hasLoc=!!(S.loc&&S.loc.trim());
   const favCount=favourites.length;
 
@@ -730,26 +729,8 @@ function renderWelcome(){
   }
 
   // ── Screen 2b: Food type picker (eat categories) ──
-  console.log('eat check: cat='+S.cat+' results='+S.results+' eval='+(((S.cat==='eat'||S.cat==='sun_eat')&&!S.results)));
   if((S.cat==='eat'||S.cat==='sun_eat')&&!S.results){
-    console.log('INSIDE eat block, rendering food picker');
-    const cat=CATS.find(c=>c.id===S.cat);
-    app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
-      <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat=null;render()">← Back</button>
-      <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">${cat.icon} ${cat.label}</p>
-      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
-      <p class="label" style="text-align:center;margin-bottom:12px">What are you in the mood for?</p>
-      <div class="flex-wrap-tight" style="justify-content:center;margin-bottom:16px">
-        ${FOOD_TYPES.map(f=>`<button class="chip ${S.foodType===f?'on':''}" onclick="S.foodType='${f}';renderWelcome()">${f}</button>`).join("")}
-      </div>
-      <button class="btn" style="width:100%;padding:12px 0;margin-bottom:8px;border-color:#d4a853;color:#d4a853;font-size:13px" onclick="S.foodType='ask-spud';openSpudChat()">🪲 Something else...</button>
-      ${cat.needsSun?`<div style="margin-top:16px"><p class="sun-label">☀️ Sun check for</p>
-      <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px">
-      <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
-      <span id="tv" class="time-val">${timeStr()}</span></div></div>`:''}
-      <button class="btn active" style="width:100%;margin-top:16px;padding:14px 0;font-size:15px" onclick="doSearch()" ${!S.foodType?'disabled':''}>🪲 Find places</button>
-    </div></div>`;
+    renderFoodPicker();
     return;
   }
 
@@ -776,7 +757,6 @@ function renderWelcome(){
   }
 
   // ── Main menu (has location) ──
-  console.log('FELL THROUGH to main menu');
   app.innerHTML=`<div class="welcome-content">
     <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:8px" src="garyland-title.mp4"></video>
     <p style="font-size:9px;color:#333;margin-bottom:6px">v18</p>
@@ -1256,6 +1236,27 @@ function useCurrentLocation(){
 }
 function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;S.screen='welcome';render();}else{alert('Enter a location');}}
 function pickCat(id){S.screen='welcome';S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;render();}
+function pickFood(f){S.foodType=f;renderFoodPicker();}
+function renderFoodPicker(){
+  const cat=CATS.find(c=>c.id===S.cat);
+  if(!cat){render();return;}
+  app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
+    <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat=null;render()">← Back</button>
+    <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">${cat.icon} ${cat.label}</p>
+    <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+    <p class="label" style="text-align:center;margin-bottom:12px">What are you in the mood for?</p>
+    <div class="flex-wrap-tight" style="justify-content:center;margin-bottom:16px">
+      ${FOOD_TYPES.map(f=>`<button class="chip ${S.foodType===f?'on':''}" onclick="pickFood('${f}')">${f}</button>`).join("")}
+    </div>
+    <button class="btn" style="width:100%;padding:12px 0;margin-bottom:8px;border-color:#d4a853;color:#d4a853;font-size:13px" onclick="S.foodType='ask-spud';openSpudChat()">🪲 Something else...</button>
+    ${cat.needsSun?`<div style="margin-top:16px"><p class="sun-label">☀️ Sun check for</p>
+    <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+    <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
+    <span id="tv" class="time-val">${timeStr()}</span></div></div>`:''}
+    <button class="btn active" style="width:100%;margin-top:16px;padding:14px 0;font-size:15px" onclick="doSearch()" ${!S.foodType?'disabled':''}>🪲 Find places</button>
+  </div></div>`;
+}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
 function goBack(){
   clearInterval(S.loadInterval);S.loadInterval=null;
