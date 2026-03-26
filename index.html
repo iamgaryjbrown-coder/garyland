@@ -749,7 +749,7 @@ function renderWelcome(){
   // ── Screen 2c: Pub in Sun sun picker ──
   if(S.cat==='sun_pub'&&!S.results){
     app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
-      <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat='sun';render()">← Back</button>
+      <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat='sun';S.results=null;render()">← Back</button>
       <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">☀️🍺 Pub in the Sun</p>
       <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
       <div style="margin-top:8px"><p class="sun-label">☀️ Sun check for</p>
@@ -771,7 +771,7 @@ function renderWelcome(){
       <p style="font-size:18px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;cursor:pointer" onclick="S.screen='location';render()">📍 ${esc(S.loc)} <span style="font-size:13px;color:#5a5548">✎</span></p>
     </div>
     <div class="cat-stack">
-      <button class="btn" onclick="S.cat='sun';render()">☀️ Fun in the Sun!</button>
+      <button class="btn" onclick="S.cat='sun';S.results=null;S.searching=false;render()">☀️ Fun in the Sun!</button>
       <button class="btn" onclick="pickCat('pub')">🍻 Pub O'Clock!</button>
       <button class="btn" onclick="pickCat('eat')">🥘 Eat Out!</button>
       <div style="height:6px"></div>
@@ -1239,7 +1239,7 @@ function useCurrentLocation(){
   },{timeout:10000});
 }
 function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;S.screen='welcome';render();}else{alert('Enter a location');}}
-function pickCat(id){S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;render();}
+function pickCat(id){S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;render();}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
 function goBack(){
   clearInterval(S.loadInterval);S.loadInterval=null;
