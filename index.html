@@ -691,21 +691,25 @@ function renderWelcome(){
   const hasLoc=!!(S.loc&&S.loc.trim());
   const favCount=favourites.length;
 
-  // ── Screen 1: Location picker (shown when no location, or user taps ✎) ──
+  // ── Screen 1: Opening/location screen ──
   if(S.screen==='location'||!hasLoc){
     const prevLoc=localStorage.getItem('garyland_last_loc')||'';
+    let continuBtn='';
+    if(prevLoc){continuBtn=`<button class="btn" style="width:100%;padding:12px 0" id="cont-btn">Continue — ${esc(prevLoc)}</button>`;}
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:16px" src="garyland-title.mp4"></video>
       <p style="font-size:9px;color:#333;margin-bottom:16px">v17</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="useCurrentLocation()">📍 Use current location</button>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input class="input" id="li" value="${esc(prevLoc)}" placeholder="Somewhere else..." style="flex:1" onkeydown="if(event.key==='Enter'){S.loc=this.value.trim();if(S.loc){localStorage.setItem('garyland_last_loc',S.loc);S.screen='welcome';render();}}">
-          <button class="btn active" style="padding:12px 16px;font-size:15px;flex-shrink:0" onclick="const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;localStorage.setItem('garyland_last_loc',v);S.screen='welcome';render();}else alert('Enter a location');">→</button>
-        </div>
-        ${prevLoc?`<button class="btn" style="width:100%;padding:12px 0" onclick="S.loc='${esc(prevLoc)}';S.screen='welcome';render()">Continue — ${esc(prevLoc)}</button>`:''}
+        <input class="input" id="li" placeholder="Somewhere else..." style="width:100%" onkeydown="if(event.key==='Enter')setLocFromInput()">
+        <button class="btn" style="width:100%;padding:12px 0" onclick="setLocFromInput()">→ Go</button>
+        ${continuBtn}
       </div>
     </div>`;
+    if(prevLoc){
+      const cb=document.getElementById('cont-btn');
+      if(cb)cb.onclick=()=>{S.loc=prevLoc;S.screen='welcome';render();};
+    }
     return;
   }
 
@@ -1244,6 +1248,7 @@ function useCurrentLocation(){
     alert("Couldn't get location — type it instead");
   },{timeout:10000});
 }
+function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;localStorage.setItem('garyland_last_loc',v);S.screen='welcome';render();}else{alert('Enter a location');}}
 function pickCat(id){S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;render();}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
 function goBack(){
