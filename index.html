@@ -743,8 +743,14 @@ function renderWelcome(){
     return;
   }
 
+  // ── Pub O'Clock: go straight to search ──
+  if(S.cat==='pub'&&!S.results&&!S.searching){
+    doSearch();
+    return;
+  }
+
   // ── Screen 2c: Pub in Sun sun picker ──
-  if(S.cat==='sun_pub'&&!S.searching){
+  if(S.cat==='sun_pub'&&!S.results){
     app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
       <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat='sun';render()">← Back</button>
       <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">☀️🍺 Pub in the Sun</p>
@@ -1252,6 +1258,7 @@ function goBack(){
 async function loadMoreResults(){
   S.pageOffset=(S.pageOffset||0)+S.pageSize;
   S.searching=false;
+  S.results=null;
   await doSearch();
 }
 
