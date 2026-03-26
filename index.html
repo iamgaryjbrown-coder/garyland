@@ -1251,7 +1251,7 @@ function useCurrentLocation(){
   },{timeout:10000});
 }
 function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;S.screen='welcome';render();}else{alert('Enter a location');}}
-function pickCat(id){S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;render();}
+function pickCat(id){S.screen='welcome';S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;render();}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
 function goBack(){
   clearInterval(S.loadInterval);S.loadInterval=null;
