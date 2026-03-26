@@ -729,7 +729,7 @@ function renderWelcome(){
   }
 
   // ── Screen 2b: Food type picker (eat categories) ──
-  if((S.cat==='eat'||S.cat==='sun_eat')&&!S.foodType){
+  if((S.cat==='eat'||S.cat==='sun_eat')&&!S.results){
     const cat=CATS.find(c=>c.id===S.cat);
     app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
       <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat=null;render()">← Back</button>
