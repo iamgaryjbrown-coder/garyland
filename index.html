@@ -859,7 +859,7 @@ function renderResults(){
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
     h+=`<div class="card" style="animation-delay:${i*0.08}s">
-      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}<span id="dist-${i}" style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400"></span></div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="openMapPopup(${i})">${esc(p.address)}</div></div>
+      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${esc(p.name)}<span id="dist-${i}" style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400;white-space:nowrap"></span></div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="openMapPopup(${i})">${esc(p.address)}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0"><button id="fav-${i}" class="fav-btn" onclick="event.stopPropagation();toggleFavourite(${i})">${isFavourite(p.name,p.address)?'♥':'♡'}</button>${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>`;
 
     // Shadow map with overlaid time slider (sun categories only)
@@ -1059,7 +1059,7 @@ function renderChatVenues(places,textBefore,resetOffset=false){
     const name=esc(p.name);
     const placeData=encodeURIComponent(JSON.stringify({name:p.name,address:p.address||'',rating:p.rating,summary:p.summary||'',price_level:p.price_level||'',highlights:p.highlights||[],sun_verdict:p.sun_verdict||''}));
     h+=`<div class="card" data-place="${placeData}" data-place-id="${p.place_id||''}" style="margin:4px 0;animation:fade-up 0.4s ease both;animation-delay:${i*0.08}s">
-      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${name}<span id="cdist-${idx}" style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400"></span></div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="chatMapPopup(\x27${name.replace(/'/g,"\\\\\\x27")}\x27,\x27${addr.replace(/'/g,"\\\\\\x27")}\x27)">${addr}</div></div>
+      <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">${name}<span id="cdist-${idx}" style="font-size:12px;color:#8a8478;font-family:'DM Sans',sans-serif;font-weight:400;white-space:nowrap"></span></div><div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="chatMapPopup(\x27${name.replace(/'/g,"\\\\\\x27")}\x27,\x27${addr.replace(/'/g,"\\\\\\x27")}\x27)">${addr}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0"><button id="cfav-${idx}" class="fav-btn" onclick="event.stopPropagation();chatToggleFav(${idx})">${isFavourite(p.name,p.address||'')?'\u2665':'\u2661'}</button>${p.price_level?`<span style="font-size:12px;color:#8a8478">${esc(p.price_level)}</span>`:""}<span class="badge ${bc}">${p.rating}/10</span></div></div>
       <div id="cph-${idx}" class="photo-strip"><div class="photo-shimmer" style="width:170px"></div><div class="photo-shimmer" style="width:190px"></div><div class="photo-shimmer" style="width:180px"></div></div>
       <div class="card-body"><p class="card-summary">${esc(p.summary||'')}</p>
