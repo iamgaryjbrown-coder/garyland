@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>🪲 GaryLand v16</title>
+<title>🪲 GaryLand v17</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -161,25 +161,26 @@ function getSunPosition(date,lat,lng){const lw=RAD*-lng,phi=RAD*lat,d=toDays(dat
 
 // ── Data ──
 const CATS=[
-  {id:"sun_drink",icon:"🍺",label:"Drink in Sun",needsSun:true,chips:["Cask ales","Craft beer","Wine bar","Cocktails","Dog-friendly","Big garden","Riverside","Rooftop"]},
-  {id:"sun_eat",icon:"🍽️",label:"Eat in Sun",needsSun:true,chips:["Pub food","Fine dining","Brunch","Pizza","Seafood","Veggie-friendly","Dog-friendly","Terrace"]},
-  {id:"pub",icon:"🍻",label:"Great Pub",needsSun:false,chips:["Cask ales","Craft beer","Cosy","Live music","Dog-friendly","Quiz night","Real fire","Good food"]},
-  {id:"eat",icon:"🥘",label:"Great Restaurant",needsSun:false,chips:["Italian","Indian","Japanese","British","Mexican","Thai","Michelin","Cheap & cheerful"]},
-  {id:"stay",icon:"🏨",label:"Somewhere to Stay",needsSun:false,chips:["Boutique","Budget","Luxury","Countryside","Dog-friendly","Spa","Historic","Family"]},
+  {id:"sun_pub",icon:"☀️🍺",label:"Pub in the Sun",needsSun:true,ratingFloor:0,gType:"bar",chips:[]},
+  {id:"sun_eat",icon:"☀️🍽️",label:"Restaurant in the Sun",needsSun:true,ratingFloor:7,gType:"restaurant",chips:[]},
+  {id:"pub",icon:"🍻",label:"Pub O'Clock!",needsSun:false,ratingFloor:7,gType:"bar",chips:[]},
+  {id:"eat",icon:"🥘",label:"Eat Out!",needsSun:false,ratingFloor:7,gType:"restaurant",chips:[]},
 ];
+
+const FOOD_TYPES=["Italian","Pizza","Indian","Greek","Thai","Japanese","Sushi","Burgers","Lebanese","Spanish","Fish","Vegetarian","Vegan"];
+
 const LOAD_MSGS={
   sun:["Calculating sun angles...","Checking shadow patterns...","Finding sunny terraces...","Rating the golden hour potential..."],
   pub:["Pulling pints of data...","Checking the hand pumps...","Sniffing out real fires...","Asking the regulars..."],
   eat:["Tasting the reviews...","Checking the specials board...","Interrogating the sommelier...","Reading between the Michelin lines..."],
-  stay:["Fluffing the pillows...","Checking the thread count...","Testing the Wi-Fi...","Rating the breakfast buffer..."],
 };
-const getMsgType=id=>id?.includes("sun")?"sun":id==="pub"?"pub":id==="stay"?"stay":"eat";
+const getMsgType=id=>id?.includes("sun")?"sun":id==="pub"?"pub":"eat";
 const BEETLE=`<video autoplay loop muted playsinline style="width:120px;height:120px;object-fit:contain" src="beetle.mp4"></video>`;
 
 // ── State ──
 let S={
   screen:"welcome",
-  cat:null,prefs:[],loc:"",
+  cat:null,prefs:[],loc:localStorage.getItem('garyland_last_loc')||"",foodType:null,
   userLat:null,userLng:null,
   date:new Date().toISOString().slice(0,10),
   timeIdx:Math.round((new Date().getHours()*60+new Date().getMinutes())/15),
@@ -187,7 +188,9 @@ let S={
   chatPlace:null,chatMsgs:[],chatLoading:false,
   loadMsgIdx:0,loadInterval:null,searching:false,
   spudChatLoading:false,
-  range:null  // null = no limit, or "500m", "1km", "2km"
+  range:null,
+  // Pagination
+  allGPlaces:[],pageOffset:0,pageSize:10
 };
 
 // ── Persistent Storage ──
@@ -379,7 +382,7 @@ function getPhotosAndGeometry(name,addr){
   });
 }
 // ── Google Places Nearby Search ──
-const CAT_TYPE={sun_drink:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant",stay:"lodging"};
+const CAT_TYPE={sun_pub:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant"}; // legacy fallback
 function parseRange(r){return r==="500m"?500:r==="1km"?1000:r==="2km"?2000:5000;}
 function googleNearbySearch(lat,lng,radiusM,type){
   return new Promise(res=>{
@@ -682,56 +685,97 @@ function render(){
 }
 
 function renderWelcome(){
-  const cat=CATS.find(c=>c.id===S.cat);
-  
   const hasLoc=!!(S.loc&&S.loc.trim());
+  const favCount=favourites.length;
 
-  if(!cat){
-    const favCount=favourites.length;
-    if(!hasLoc){
-      app.innerHTML=`<div class="welcome-content">
-        <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
-        <p style="font-size:9px;color:#333;margin-bottom:12px">v16</p>
-        <div style="width:280px">
-          <p class="label" style="text-align:center;margin-bottom:12px">Where are you?</p>
-          <button class="btn" style="width:100%;font-size:13px" onclick="useCurrentLocation()">📍 Use current location</button>
-          <input class="input" id="li" value="" placeholder="Or type a location..." style="margin-top:10px" onkeydown="if(event.key==='Enter'){S.loc=this.value;render();}">
-          <button class="btn active" style="width:100%;margin-top:12px;padding:12px 0" onclick="S.loc=document.getElementById('li')?.value||'';if(S.loc.trim())render();else alert('Enter a location');">Continue</button>
+  // ── Screen 1: Location picker (shown when no location, or user taps ✎) ──
+  if(S.screen==='location'||!hasLoc){
+    const prevLoc=localStorage.getItem('garyland_last_loc')||'';
+    app.innerHTML=`<div class="welcome-content">
+      <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:16px" src="garyland-title.mp4"></video>
+      <p style="font-size:9px;color:#333;margin-bottom:16px">v17</p>
+      <div style="width:280px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="useCurrentLocation()">📍 Use current location</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="input" id="li" value="${esc(prevLoc)}" placeholder="Somewhere else..." style="flex:1" onkeydown="if(event.key==='Enter'){S.loc=this.value.trim();if(S.loc){localStorage.setItem('garyland_last_loc',S.loc);S.screen='welcome';render();}}">
+          <button class="btn active" style="padding:12px 16px;font-size:15px;flex-shrink:0" onclick="const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;localStorage.setItem('garyland_last_loc',v);S.screen='welcome';render();}else alert('Enter a location');">→</button>
         </div>
-      </div>`;
-    } else {
-      app.innerHTML=`<div class="welcome-content">
-        <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:20px" src="garyland-title.mp4"></video>
-        <p style="font-size:9px;color:#333;margin-bottom:4px">v16</p>
-        <p style="font-size:12px;color:#8a8478;margin-bottom:16px;cursor:pointer;text-decoration:underline" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
-        <div class="cat-stack">
-          ${CATS.map(c=>`<button class="btn" onclick="pickCat('${c.id}')">${c.icon} ${c.label}</button>`).join("")}
-          <div style="height:6px"></div>
-          <button class="btn" onclick="openSpudChat()" style="border-color:#d4a853;color:#d4a853">🪲 Ask Spud</button>
-          ${favCount?`<button class="btn" onclick="openFavourites()">❤️ Favourites <span style="font-size:11px;color:#6a645a">(${favCount})</span></button>`:""}
-        </div>
-      </div>`;
-    }
+        ${prevLoc?`<button class="btn" style="width:100%;padding:12px 0" onclick="S.loc='${esc(prevLoc)}';S.screen='welcome';render()">Continue — ${esc(prevLoc)}</button>`:''}
+      </div>
+    </div>`;
     return;
   }
 
-  let h=`<div class="prefs-screen"><div style="width:280px">
-    <button class="back-btn" style="display:block" onclick="S.cat=null;S.prefs=[];S.range=null;render()">← ${cat.icon} ${cat.label}</button>
-    <p style="font-size:12px;color:#8a8478;text-align:center;margin-top:8px">📍 ${esc(S.loc)}</p>
-    <p class="label" style="text-align:center;margin-top:16px">Preferences</p>
-    <div class="flex-wrap-tight" style="justify-content:center;margin-top:8px">${cat.chips.map(c=>`<button class="chip ${S.prefs.includes(c)?"on":""}" onclick="togglePref('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("")}</div>
-    <p class="label" style="text-align:center;margin-top:16px">Range</p>
-    <div class="flex-wrap-tight" style="justify-content:center">${["500m","1km","2km"].map(r=>`<button class="chip ${S.range===r?"on":""}" onclick="S.range=S.range==='${r}'?null:'${r}';render()">${r}</button>`).join("")}</div>`;
-  if(cat.needsSun){
-    h+=`<div style="margin-top:20px"><p class="sun-label">☀️ Sun check for</p>
-    <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
-    <div style="display:flex;align-items:center;gap:10px">
-    <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
-    <span id="tv" class="time-val">${timeStr()}</span></div></div>`;
+  // ── Screen 2a: Sun sub-menu (Fun in the Sun!) ──
+  if(S.cat==='sun'){
+    app.innerHTML=`<div class="welcome-content">
+      <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:12px" src="garyland-title.mp4"></video>
+      <p style="font-size:16px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;margin-bottom:4px">☀️ Fun in the Sun!</p>
+      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+      <div style="width:280px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn" style="width:100%;padding:14px 0;font-size:15px" onclick="pickCat('sun_pub')">🍺 Pub in the Sun</button>
+        <button class="btn" style="width:100%;padding:14px 0;font-size:15px" onclick="pickCat('sun_eat')">🍽️ Restaurant in the Sun</button>
+        <button class="back-btn" style="margin-top:8px;width:100%;text-align:center" onclick="S.cat=null;render()">← Back</button>
+      </div>
+    </div>`;
+    return;
   }
-  h+=`<button class="btn active" style="width:100%;margin-top:20px;padding:14px 0;font-size:15px" onclick="doSearch()">🪲 Find places</button>
-  </div></div>`;
-  app.innerHTML=h;
+
+  // ── Screen 2b: Food type picker (eat categories) ──
+  if((S.cat==='eat'||S.cat==='sun_eat')&&!S.foodType){
+    const cat=CATS.find(c=>c.id===S.cat);
+    app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
+      <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat=null;render()">← Back</button>
+      <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">${cat.icon} ${cat.label}</p>
+      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+      <p class="label" style="text-align:center;margin-bottom:12px">What are you in the mood for?</p>
+      <div class="flex-wrap-tight" style="justify-content:center;margin-bottom:16px">
+        ${FOOD_TYPES.map(f=>`<button class="chip ${S.foodType===f?'on':''}" onclick="S.foodType='${f}';renderWelcome()">${f}</button>`).join("")}
+      </div>
+      <button class="btn" style="width:100%;padding:12px 0;margin-bottom:8px;border-color:#d4a853;color:#d4a853;font-size:13px" onclick="S.foodType='ask-spud';openSpudChat()">🪲 Something else...</button>
+      ${cat.needsSun?`<div style="margin-top:16px"><p class="sun-label">☀️ Sun check for</p>
+      <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+      <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
+      <span id="tv" class="time-val">${timeStr()}</span></div></div>`:''}
+      <button class="btn active" style="width:100%;margin-top:16px;padding:14px 0;font-size:15px" onclick="doSearch()" ${!S.foodType?'disabled':''}>🪲 Find places</button>
+    </div></div>`;
+    return;
+  }
+
+  // ── Screen 2c: Pub in Sun sun picker ──
+  if(S.cat==='sun_pub'&&!S.searching){
+    app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
+      <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat='sun';render()">← Back</button>
+      <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">☀️🍺 Pub in the Sun</p>
+      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+      <div style="margin-top:8px"><p class="sun-label">☀️ Sun check for</p>
+      <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+      <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
+      <span id="tv" class="time-val">${timeStr()}</span></div></div>
+      <button class="btn active" style="width:100%;margin-top:20px;padding:14px 0;font-size:15px" onclick="doSearch()">🪲 Find pubs</button>
+    </div></div>`;
+    return;
+  }
+
+  // ── Main menu (has location) ──
+  app.innerHTML=`<div class="welcome-content">
+    <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:8px" src="garyland-title.mp4"></video>
+    <p style="font-size:9px;color:#333;margin-bottom:6px">v17</p>
+    <div style="margin-bottom:20px;text-align:center">
+      <p style="font-size:11px;color:#5a5548;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px">You are here</p>
+      <p style="font-size:18px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;cursor:pointer" onclick="S.screen='location';render()">📍 ${esc(S.loc)} <span style="font-size:13px;color:#5a5548">✎</span></p>
+    </div>
+    <div class="cat-stack">
+      <button class="btn" onclick="S.cat='sun';render()">☀️ Fun in the Sun!</button>
+      <button class="btn" onclick="pickCat('pub')">🍻 Pub O'Clock!</button>
+      <button class="btn" onclick="pickCat('eat')">🥘 Eat Out!</button>
+      <div style="height:6px"></div>
+      <button class="btn" onclick="openSpudChat()" style="border-color:#d4a853;color:#d4a853">🪲 Ask Spud</button>
+      ${favCount?`<button class="btn" onclick="openFavourites()">❤️ Favourites <span style="font-size:11px;color:#6a645a">(${favCount})</span></button>`:""}
+    </div>
+  </div>`;
 }
 
 function renderLoading(){
@@ -759,6 +803,7 @@ function renderResults(){
     <h2 class="h2">${q.cat.icon} ${q.cat.label}</h2>
     <p style="font-size:13px;color:#6a645a;margin-bottom:16px">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>`;
 
+  const hasMore=S.allGPlaces.length>(S.pageOffset||0)+S.pageSize;
   h+=`<div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px">`;
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
@@ -784,6 +829,13 @@ function renderResults(){
       ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
       <button class="btn" style="width:100%;margin-top:12px" onclick="openChat(${i})">💬 Tell me more</button></div></div>`;
   });
+  // Pagination + Ask Spud buttons
+  h+=`<div style="display:flex;flex-direction:column;gap:10px;padding-top:8px">`;
+  if(hasMore){
+    h+=`<button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="loadMoreResults()">More places →</button>`;
+  }
+  h+=`<button class="btn" style="width:100%;padding:12px 0;border-color:#d4a853;color:#d4a853" onclick="openSpudChat()">🪲 Ask Spud instead</button>`;
+  h+=`</div>`;
   h+=`</div></div></div>`;
   app.innerHTML=h;
 
@@ -1167,11 +1219,13 @@ function useCurrentLocation(){
           } else {
             S.loc=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
           }
-          render();
+          localStorage.setItem('garyland_last_loc',S.loc);
+          S.screen='welcome';render();
         });
       } else {
         S.loc=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        render();
+        localStorage.setItem('garyland_last_loc',S.loc);
+        S.screen='welcome';render();
       }
     };
     if(GOOGLE_KEY&&!window.google?.maps){loadMaps(GOOGLE_KEY).then(doGeocode).catch(doGeocode);}
@@ -1181,18 +1235,24 @@ function useCurrentLocation(){
     alert("Couldn't get location — type it instead");
   },{timeout:10000});
 }
-function pickCat(id){S.cat=id;S.prefs=[];render();}
+function pickCat(id){S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;render();}
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
 function goBack(){
   clearInterval(S.loadInterval);S.loadInterval=null;
   releaseWakeLock();
   overpassDone=true;allBuildings=[];
   if(overpassTimeout){clearTimeout(overpassTimeout);overpassTimeout=null;}
-  // Clean up shadow maps
   for(const k of Object.keys(shadowMaps)){try{shadowMaps[k].remove();}catch(e){}}
   shadowMaps={};shadowLayers={};buildingLayers={};cardBuildings={};cardCoords={};cardPhotos={};
   S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;S.range=null;
+  S.allGPlaces=[];S.pageOffset=0;S.foodType=null;
   render();
+}
+
+async function loadMoreResults(){
+  S.pageOffset=(S.pageOffset||0)+S.pageSize;
+  S.searching=false;
+  await doSearch();
 }
 
 async function doSearch(){
@@ -1233,33 +1293,41 @@ async function doSearch(){
   }
 
   // Google Places nearbySearch — find real venues
-  const radiusM=parseRange(S.range);
-  const gType=CAT_TYPE[cat.id]||"restaurant";
-  let gPlaces=[];
-  if(S.userLat&&plSvc){
-    try{gPlaces=await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);}catch(e){}
+  // Use paginated allGPlaces cache so "More" button doesn't re-fetch
+  const radiusM=parseRange(S.range||null);
+  const gType=cat.gType||"restaurant";
+  const ratingFloor=cat.ratingFloor||0;
+  const foodTypeStr=S.foodType&&S.foodType!=='ask-spud'?S.foodType:null;
+
+  if(!S.allGPlaces.length&&S.userLat&&plSvc){
+    try{
+      // Fetch more than pageSize so pagination works from cache
+      const raw=await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
+      S.allGPlaces=raw;
+    }catch(e){}
   }
 
+  const offset=S.pageOffset||0;
+  const gPlaces=S.allGPlaces.slice(offset,offset+S.pageSize);
+
   // Build prompt — either review Google results or ask Spud to search
-  const prefStr=q.prefs.length?`\nPrefs: ${q.prefs.join(", ")}.`:"";
-  const catDesc={sun_drink:"pubs/bars with outdoor seating",sun_eat:"restaurants with outdoor dining",pub:"great pubs",eat:"great restaurants",stay:"places to stay"}[q.cat.id]||"places";
-  const rangeStr=S.range||"5km";
+  const prefStr=foodTypeStr?`\nCuisine focus: ${foodTypeStr}.`:"";
+  const catDesc={sun_pub:"pubs with outdoor seating in direct sun",sun_eat:"restaurants with outdoor dining in direct sun",pub:"pubs",eat:"restaurants"}[q.cat.id]||"places";
+  const ratingNote=ratingFloor>0?`\nOnly include places you'd rate ${ratingFloor}/10 or above. Skip anything below that.`:"";
   let prompt;
 
   if(gPlaces.length>0){
-    // Google found venues — ask Spud to review them
     const listing=gPlaces.map((r,i)=>{
-      let line=`${i+1}. ${r.name} — ${r.address}`;
+      let line=`${offset+i+1}. ${r.name} — ${r.address}`;
       if(r.gRating)line+=` (Google: ${r.gRating}/5 from ${r.totalRatings} reviews)`;
       if(r.priceLevel!=null)line+=` ${"£".repeat(r.priceLevel+1)}`;
       if(r.isOpen===true)line+=" [open now]";
       if(r.isOpen===false)line+=" [currently closed]";
       return line;
     }).join("\n");
-    prompt=`Here are ${gPlaces.length} ${catDesc} within ${rangeStr} of "${q.loc}" from Google:\n\n${listing}${prefStr}${sunCtx}\n\nReview ALL of them. Rate each honestly — if somewhere is rubbish, say so. Don't filter any out.\n\nReturn ONLY JSON:\n{"places":[{"name":"<exact name from list>","address":"<full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nInclude every venue from the list. Be opinionated.`;
+    prompt=`Here are ${gPlaces.length} ${catDesc} near "${q.loc}" from Google:\n\n${listing}${prefStr}${ratingNote}${sunCtx}\n\nReview ALL of them honestly.${ratingFloor>0?" Filter out anything below "+ratingFloor+"/10.":""}\n\nReturn ONLY JSON:\n{"places":[{"name":"<exact name>","address":"<full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only include places that meet the quality bar.`;
   } else {
-    // No Google results — ask Spud to search (fallback)
-    prompt=`Find ${catDesc} within ${rangeStr} of "${q.loc}".${prefStr}${sunCtx}\n\nSearch the web. Return ALL real places you find — don't filter by quality. Rate each honestly.\n\nReturn ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only real places — never invent one.`;
+    prompt=`Find ${catDesc} near "${q.loc}".${prefStr}${ratingNote}${sunCtx}\n\nSearch the web. Rate each honestly.${ratingFloor>0?" Only include places rated "+ratingFloor+"/10 or above.":""}\n\nReturn ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only real places — never invent one.`;
   }
 
   try{
