@@ -1086,12 +1086,8 @@ function renderFavourites(){
       const isExpanded=favExpandedGroups[loc]!==false; // Default to expanded
       const groupId='fav-group-'+loc.replace(/[^a-zA-Z0-9]/g,'');
       h+=`<div class="card" style="padding:0;overflow:hidden">
-        <div onclick="toggleFavGroup('${esc(loc)}')" style="padding:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#1a1917">
+        <div onclick="toggleFavGroup('${esc(loc)}')" style="padding:14px;cursor:pointer;background:#1a1917">
           <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#d4a853">📍 ${esc(loc)}</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:12px;color:#6a645a">${items.length} place${items.length>1?'s':''}</span>
-            <span style="color:#6a645a;font-size:14px">${isExpanded?'▼':'▶'}</span>
-          </div>
         </div>
         <div id="${groupId}" style="display:${isExpanded?'block':'none'}">`;
       items.forEach((f,j)=>{
