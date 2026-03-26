@@ -696,6 +696,7 @@ function render(){
 }
 
 function renderWelcome(){
+  console.log('renderWelcome: screen='+S.screen+' cat='+S.cat+' foodType='+S.foodType+' results='+(S.results?'yes':'null'));
   const hasLoc=!!(S.loc&&S.loc.trim());
   const favCount=favourites.length;
 
