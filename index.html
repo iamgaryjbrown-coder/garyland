@@ -1387,7 +1387,9 @@ async function doSearch(){
       // Use text search for cuisine-specific queries, nearby for generic
       const raw=foodTypeStr
         ?await googleTextSearch(foodTypeStr+' restaurant '+q.loc,S.userLat,S.userLng,radiusM)
-        :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
+        :cat.id==='pub'||cat.id==='sun_pub'
+          ?await googleTextSearch('pub '+q.loc,S.userLat,S.userLng,radiusM)
+          :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
       S.allGPlaces=raw;
     }catch(e){}
   }
