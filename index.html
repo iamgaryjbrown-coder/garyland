@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>🪲 GaryLand v18</title>
+<title>🪲 GaryLand v19</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -14,6 +14,11 @@ input::placeholder{color:#5a5548}
 @keyframes beetle-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes surprise-wiggle{0%,100%{transform:rotate(0deg)}15%{transform:rotate(-10deg) scale(1.1)}30%{transform:rotate(10deg)}45%{transform:rotate(-6deg)}60%{transform:rotate(6deg)}75%{transform:rotate(-3deg)}90%{transform:rotate(3deg)}}
+.surprise-chip{background:linear-gradient(135deg,rgba(212,168,83,0.08) 0%,rgba(212,168,83,0.15) 100%);border:1.5px dashed #d4a853;color:#d4a853;position:relative;overflow:hidden}
+.surprise-chip::before{content:"";position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent 40%,rgba(212,168,83,0.15) 50%,transparent 60%);animation:surprise-shimmer 2.5s ease-in-out infinite}
+@keyframes surprise-shimmer{0%{transform:translateX(-100%) rotate(45deg)}100%{transform:translateX(100%) rotate(45deg)}}
+.surprise-spin{animation:surprise-wiggle 0.5s ease-out}
 .page{max-width:480px;margin:0 auto;height:100%;overflow:hidden;position:relative;width:100%}
 .h1{font-family:'Fraunces',serif;font-size:28px;font-weight:800;color:#d4a853;letter-spacing:-0.5px}
 .h2{font-family:'Fraunces',serif;font-size:20px;font-weight:800;color:#d4a853}
@@ -755,7 +760,7 @@ function renderWelcome(){
   if(S.screen==='location'||!hasLoc){
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:16px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:20px">v18</p>
+      <p style="font-size:9px;color:#333;margin-bottom:20px">v19</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="useCurrentLocation()">📍 Use current location</button>
         <input class="input" id="li" placeholder="Somewhere else..." style="width:100%" onkeydown="if(event.key==='Enter')setLocFromInput()">
@@ -811,7 +816,7 @@ function renderWelcome(){
   // ── Main menu (has location) ──
   app.innerHTML=`<div class="welcome-content">
     <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:8px" src="garyland-title.mp4"></video>
-    <p style="font-size:9px;color:#333;margin-bottom:6px">v18</p>
+    <p style="font-size:9px;color:#333;margin-bottom:6px">v19</p>
     <div style="margin-bottom:20px;text-align:center">
       <p style="font-size:11px;color:#5a5548;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px">Searching</p>
       <p style="font-size:18px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;cursor:pointer" onclick="S.screen='location';render()">📍 ${esc(S.loc)} <span style="font-size:13px;color:#5a5548">✎</span></p>
@@ -1299,6 +1304,7 @@ function renderFoodPicker(){
     <p class="label" style="text-align:center;margin-bottom:12px">What are you in the mood for?</p>
     <div class="flex-wrap-tight" style="justify-content:center;margin-bottom:16px">
       ${FOOD_TYPES.map(f=>`<button class="chip ${S.foodType===f?'on':''}" onclick="pickFood('${f}')">${f}</button>`).join("")}
+      <button class="chip surprise-chip ${S.foodType==='surprise'?'on':''}" onclick="this.classList.add('surprise-spin');pickFood('surprise')">🎲 Surprise Me!</button>
     </div>
     <button class="btn" style="width:100%;padding:12px 0;margin-bottom:8px;border-color:#d4a853;color:#d4a853;font-size:13px" onclick="S.foodType='ask-spud';openSpudChat()">🪲 Something else...</button>
     ${cat.needsSun?`<div style="margin-top:16px"><p class="sun-label">☀️ Sun check for</p>
@@ -1371,7 +1377,7 @@ async function doSearch(){
   const radiusM=parseRange(S.range||null);
   const gType=cat.gType||"restaurant";
   const ratingFloor=cat.ratingFloor||0;
-  const foodTypeStr=S.foodType&&S.foodType!=='ask-spud'?S.foodType:null;
+  const foodTypeStr=S.foodType&&S.foodType!=='ask-spud'&&S.foodType!=='surprise'?S.foodType:null;
 
   if(!S.allGPlaces.length&&S.userLat&&plSvc){
     try{
