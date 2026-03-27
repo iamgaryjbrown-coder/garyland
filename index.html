@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>🪲 GaryLand v18</title>
+<title>🪲 GaryLand v19</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -14,6 +14,11 @@ input::placeholder{color:#5a5548}
 @keyframes beetle-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes surprise-wiggle{0%,100%{transform:rotate(0deg)}10%{transform:rotate(-8deg) scale(1.05)}20%{transform:rotate(8deg) scale(1.08)}30%{transform:rotate(-6deg) scale(1.06)}40%{transform:rotate(6deg) scale(1.04)}50%{transform:rotate(-4deg)}60%{transform:rotate(4deg)}70%{transform:rotate(-2deg)}80%{transform:rotate(2deg)}90%{transform:rotate(0deg)}}
+.surprise-btn{background:linear-gradient(135deg,#1a1917 0%,#252320 100%);border:1px solid #d4a853;color:#d4a853;position:relative;overflow:hidden}
+.surprise-btn::before{content:"";position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent 40%,rgba(212,168,83,0.1) 50%,transparent 60%);animation:surprise-shimmer 3s ease-in-out infinite}
+@keyframes surprise-shimmer{0%{transform:translateX(-100%) rotate(45deg)}100%{transform:translateX(100%) rotate(45deg)}}
+.surprise-spin{animation:surprise-wiggle 0.6s ease-out}
 .page{max-width:480px;margin:0 auto;height:100%;overflow:hidden;position:relative;width:100%}
 .h1{font-family:'Fraunces',serif;font-size:28px;font-weight:800;color:#d4a853;letter-spacing:-0.5px}
 .h2{font-family:'Fraunces',serif;font-size:20px;font-weight:800;color:#d4a853}
@@ -164,6 +169,7 @@ function getSunPosition(date,lat,lng){const lw=RAD*-lng,phi=RAD*lat,d=toDays(dat
 const CATS=[
   {id:"sun_pub",icon:"☀️🍺",label:"Pub in the Sun",needsSun:true,ratingFloor:0,gType:"bar",chips:[]},
   {id:"sun_eat",icon:"☀️🍽️",label:"Restaurant in the Sun",needsSun:true,ratingFloor:7,gType:"restaurant",chips:[]},
+  {id:"surprise",icon:"🎲",label:"Surprise Me!",needsSun:true,ratingFloor:7,gType:"restaurant",chips:[]},
   {id:"pub",icon:"🍻",label:"Pub O'Clock!",needsSun:false,ratingFloor:7,gType:"bar",chips:[]},
   {id:"eat",icon:"🥘",label:"Eat Out!",needsSun:false,ratingFloor:7,gType:"restaurant",chips:[]},
 ];
@@ -172,10 +178,11 @@ const FOOD_TYPES=["Italian","Pizza","Indian","Greek","Thai","Japanese","Sushi","
 
 const LOAD_MSGS={
   sun:["Calculating sun angles...","Checking shadow patterns...","Finding sunny terraces...","Rating the golden hour potential..."],
+  surprise:["Rolling the dice...","Consulting the oracle...","Shuffling the deck...","The beetle is thinking...","Channelling good vibes..."],
   pub:["Pulling pints of data...","Checking the hand pumps...","Sniffing out real fires...","Asking the regulars..."],
   eat:["Tasting the reviews...","Checking the specials board...","Interrogating the sommelier...","Reading between the Michelin lines..."],
 };
-const getMsgType=id=>id?.includes("sun")?"sun":id==="pub"?"pub":"eat";
+const getMsgType=id=>id==="surprise"?"surprise":id?.includes("sun")?"sun":id==="pub"?"pub":"eat";
 const BEETLE=`<video autoplay loop muted playsinline style="width:120px;height:120px;object-fit:contain" src="beetle.mp4"></video>`;
 
 // ── State ──
@@ -383,7 +390,7 @@ function getPhotosAndGeometry(name,addr){
   });
 }
 // ── Google Places Nearby Search ──
-const CAT_TYPE={sun_pub:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant"}; // legacy fallback
+const CAT_TYPE={sun_pub:"bar",sun_eat:"restaurant",surprise:"restaurant",pub:"bar",eat:"restaurant"}; // legacy fallback
 function parseRange(r){return r==="500m"?500:r==="1km"?1000:r==="2km"?2000:5000;}
 function googleNearbySearch(lat,lng,radiusM,type){
   return new Promise(res=>{
@@ -755,7 +762,7 @@ function renderWelcome(){
   if(S.screen==='location'||!hasLoc){
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:260px;height:auto;margin-bottom:16px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:20px">v18</p>
+      <p style="font-size:9px;color:#333;margin-bottom:20px">v19</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="useCurrentLocation()">📍 Use current location</button>
         <input class="input" id="li" placeholder="Somewhere else..." style="width:100%" onkeydown="if(event.key==='Enter')setLocFromInput()">
@@ -774,6 +781,7 @@ function renderWelcome(){
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn" style="width:100%;padding:14px 0;font-size:15px" onclick="pickCat('sun_pub')">🍺 Pub in the Sun</button>
         <button class="btn" style="width:100%;padding:14px 0;font-size:15px" onclick="pickCat('sun_eat')">🍽️ Restaurant in the Sun</button>
+        <button class="btn surprise-btn" style="width:100%;padding:14px 0;font-size:15px" onclick="this.classList.add('surprise-spin');pickCat('surprise')">🎲 Surprise Me!</button>
         <button class="back-btn" style="margin-top:8px;width:100%;text-align:center" onclick="S.cat=null;render()">← Back</button>
       </div>
     </div>`;
@@ -808,10 +816,27 @@ function renderWelcome(){
     return;
   }
 
+  // ── Screen 2d: Surprise Me sun picker ──
+  if(S.cat==='surprise'&&!S.results){
+    app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
+      <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat='sun';S.results=null;render()">← Back</button>
+      <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">🎲 Surprise Me!</p>
+      <p style="font-size:12px;color:#8a8478;text-align:center;margin-bottom:8px">Any great outdoor restaurant — chef's choice!</p>
+      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+      <div style="margin-top:8px"><p class="sun-label">☀️ Sun check for</p>
+      <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+      <input type="range" min="0" max="95" value="${S.timeIdx}" oninput="S.timeIdx=+this.value;document.getElementById('tv').textContent=timeStr()" style="flex:1">
+      <span id="tv" class="time-val">${timeStr()}</span></div></div>
+      <button class="btn active surprise-btn" style="width:100%;margin-top:20px;padding:14px 0;font-size:15px" onclick="this.classList.add('surprise-spin');setTimeout(doSearch,300)">🎲 Roll the dice!</button>
+    </div></div>`;
+    return;
+  }
+
   // ── Main menu (has location) ──
   app.innerHTML=`<div class="welcome-content">
     <video autoplay loop muted playsinline style="width:200px;height:auto;margin-bottom:8px" src="garyland-title.mp4"></video>
-    <p style="font-size:9px;color:#333;margin-bottom:6px">v18</p>
+    <p style="font-size:9px;color:#333;margin-bottom:6px">v19</p>
     <div style="margin-bottom:20px;text-align:center">
       <p style="font-size:11px;color:#5a5548;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px">Searching</p>
       <p style="font-size:18px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;cursor:pointer" onclick="S.screen='location';render()">📍 ${esc(S.loc)} <span style="font-size:13px;color:#5a5548">✎</span></p>
@@ -1388,7 +1413,7 @@ async function doSearch(){
 
   // Build prompt — either review Google results or ask Spud to search
   const prefStr=foodTypeStr?`\nCuisine focus: ${foodTypeStr}.`:"";
-  const catDesc={sun_pub:"pubs with outdoor seating in direct sun",sun_eat:"restaurants with outdoor dining in direct sun",pub:"pubs",eat:"restaurants"}[q.cat.id]||"places";
+  const catDesc={sun_pub:"pubs with outdoor seating in direct sun",sun_eat:"restaurants with outdoor dining in direct sun",surprise:"great restaurants with outdoor dining — any cuisine, surprise the user",pub:"pubs",eat:"restaurants"}[q.cat.id]||"places";
   const ratingNote=ratingFloor>0?`\nOnly include places you'd rate ${ratingFloor}/10 or above. Skip anything below that.`:"";
   let prompt;
 
