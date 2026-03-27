@@ -389,7 +389,7 @@ function getPhotosAndGeometry(name,addr){
 }
 // ── Google Places Nearby Search ──
 const CAT_TYPE={sun_pub:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant"}; // legacy fallback
-function parseRange(r){return r==="500m"?500:r==="1km"?1000:r==="2km"?2000:5000;}
+function parseRange(r,def){return r==="500m"?500:r==="1km"?1000:r==="2km"?2000:r==="5km"?5000:(def||1500);}
 function googleNearbySearch(lat,lng,radiusM,type,keyword){
   return new Promise(res=>{
     if(!plSvc){res([]);return;}
@@ -1376,7 +1376,7 @@ async function doSearch(){
 
   // Google Places nearbySearch — find real venues
   // Use paginated allGPlaces cache so "More" button doesn't re-fetch
-  const radiusM=parseRange(S.range||null);
+  const radiusM=parseRange(S.range||null, cat.id==='pub'||cat.id==='sun_pub'?1500:2000);
   const gType=cat.gType||"restaurant";
   const ratingFloor=cat.ratingFloor||0;
   const foodTypeStr=S.foodType&&S.foodType!=='ask-spud'&&S.foodType!=='surprise'?S.foodType:null;
@@ -1389,6 +1389,12 @@ async function doSearch(){
         :cat.id==='pub'||cat.id==='sun_pub'
           ?await googleNearbySearch(S.userLat,S.userLng,radiusM,null,'pub')
           :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
+      // Sort by distance from user
+      if(S.userLat&&S.userLng){
+        const toRad=x=>x*Math.PI/180;
+        const dist=(a,b)=>{const R=6371000,dLat=toRad(b.lat-a.lat),dLng=toRad(b.lng-a.lng),x=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));};
+        raw.sort((a,b)=>dist({lat:S.userLat,lng:S.userLng},a)-dist({lat:S.userLat,lng:S.userLng},b));
+      }
       S.allGPlaces=raw;
     }catch(e){}
   }
