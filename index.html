@@ -1349,10 +1349,13 @@ async function doSearch(){
   S.query=q;S.screen="loading";S.error=null;S.loadMsgIdx=0;
   clearInterval(S.loadInterval);S.loadInterval=null;render();
 
+  // Ensure Maps/Places is loaded (needed for plSvc, even if we already have GPS coords)
+  if(GOOGLE_KEY){
+    try{ if(!window.google?.maps)await loadMaps(GOOGLE_KEY); }catch(e){}
+  }
   // Geocode typed location if we don't have coords
   if(!S.userLat&&GOOGLE_KEY){
     try{
-      if(!window.google?.maps)await loadMaps(GOOGLE_KEY);
       const gc=new google.maps.Geocoder();
       await new Promise(res=>{gc.geocode({address:S.loc},(r,st)=>{if(st==="OK"&&r?.[0]){S.userLat=r[0].geometry.location.lat();S.userLng=r[0].geometry.location.lng();}res();});});
     }catch(e){}
