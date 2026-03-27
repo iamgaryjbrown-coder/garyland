@@ -390,7 +390,7 @@ function getPhotosAndGeometry(name,addr){
 // ── Google Places Nearby Search ──
 const CAT_TYPE={sun_pub:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant"}; // legacy fallback
 function parseRange(r){return r==="500m"?500:r==="1km"?1000:r==="2km"?2000:5000;}
-function googleNearbySearch(lat,lng,radiusM,type){
+function googleNearbySearch(lat,lng,radiusM,type,keyword){
   return new Promise(res=>{
     if(!plSvc){res([]);return;}
     const all=[];
@@ -413,11 +413,10 @@ function googleNearbySearch(lat,lng,radiusM,type){
         res(all);
       }
     };
-    plSvc.nearbySearch({
-      location:new google.maps.LatLng(lat,lng),
-      radius:radiusM,
-      type:type
-    },(results,status,pagination)=>{
+    const req={location:new google.maps.LatLng(lat,lng),radius:radiusM};
+    if(type)req.type=type;
+    if(keyword)req.keyword=keyword;
+    plSvc.nearbySearch(req,(results,status,pagination)=>{
       if(status!==google.maps.places.PlacesServiceStatus.OK||!results){res(all);return;}
       all.push(...results.map(mapResult));
       fetchPage(pagination);
@@ -1388,7 +1387,7 @@ async function doSearch(){
       const raw=foodTypeStr
         ?await googleTextSearch(foodTypeStr+' restaurant '+q.loc,S.userLat,S.userLng,radiusM)
         :cat.id==='pub'||cat.id==='sun_pub'
-          ?await googleTextSearch('pub '+q.loc,S.userLat,S.userLng,radiusM)
+          ?await googleNearbySearch(S.userLat,S.userLng,radiusM,null,'pub')
           :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
       S.allGPlaces=raw;
     }catch(e){}
