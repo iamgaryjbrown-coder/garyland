@@ -196,7 +196,7 @@ let S={
   spudChatLoading:false,
   range:null,
   // Pagination
-  allGPlaces:[],pageOffset:0,pageSize:10
+  allGPlaces:[],pageOffset:0,pageSize:10,pageCache:{}
 };
 
 // ── Persistent Storage ──
@@ -1294,7 +1294,7 @@ function useCurrentLocation(){
   },{timeout:10000});
 }
 function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;S.screen='welcome';render();}else{alert('Enter a location');}}
-function pickCat(id){S.screen='welcome';S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;render();}
+function pickCat(id){S.screen='welcome';S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;S.pageCache={};render();}
 function pickFood(f){S.foodType=f;renderFoodPicker();}
 function renderFoodPicker(){
   const cat=CATS.find(c=>c.id===S.cat);
@@ -1326,46 +1326,27 @@ function goBack(){
   for(const k of Object.keys(shadowMaps)){try{shadowMaps[k].remove();}catch(e){}}
   shadowMaps={};shadowLayers={};buildingLayers={};cardBuildings={};cardCoords={};cardPhotos={};
   S.screen="welcome";S.error=null;S.loadMsgIdx=0;S.searching=false;S.range=null;
-  S.allGPlaces=[];S.pageOffset=0;S.foodType=null;
+  S.allGPlaces=[];S.pageOffset=0;S.foodType=null;S.pageCache={};
   render();
 }
 
 async function loadMoreResults(){
-  S.pageOffset=(S.pageOffset||0)+S.pageSize;
+  const newOffset=(S.pageOffset||0)+S.pageSize;
+  S.pageOffset=newOffset;
   S.searching=false;
+  // Use cache if available
+  if(S.pageCache[newOffset]){S.results=S.pageCache[newOffset];S.screen="results";render();return;}
   S.results=null;
   await doSearch();
 }
 async function loadPrevResults(){
-  S.pageOffset=Math.max(0,(S.pageOffset||0)-S.pageSize);
+  const newOffset=Math.max(0,(S.pageOffset||0)-S.pageSize);
+  S.pageOffset=newOffset;
   S.searching=false;
+  // Use cache — previous page was always already fetched
+  if(S.pageCache[newOffset]){S.results=S.pageCache[newOffset];S.screen="results";render();return;}
   S.results=null;
-  // Re-ask Spud to review the previous page slice from cached gPlaces
-  const cat=CATS.find(c=>c.id===S.cat);
-  if(!cat)return;
-  const offset=S.pageOffset;
-  const gPlaces=S.allGPlaces.slice(offset,offset+S.pageSize);
-  if(!gPlaces.length){S.screen="welcome";render();return;}
-  S.screen="loading";render();
-  const listing=gPlaces.map((r,i)=>{
-    let line=`${offset+i+1}. ${r.name} — ${r.address}`;
-    if(r.gRating)line+=` (Google: ${r.gRating}/5 from ${r.totalRatings} reviews)`;
-    if(r.priceLevel!=null)line+=` ${"£".repeat(r.priceLevel+1)}`;
-    if(r.isOpen===true)line+=" [open now]";
-    if(r.isOpen===false)line+=" [currently closed]";
-    return line;
-  }).join("\n");
-  const catDesc={sun_pub:"pubs with outdoor seating in direct sun",sun_eat:"restaurants with outdoor dining in direct sun",pub:"pubs",eat:"restaurants"}[cat.id]||"places";
-  const prompt=`Here are ${gPlaces.length} ${catDesc} near "${S.loc}" from Google:\n\n${listing}\n\nInclude ALL of them — do not filter any out. Rate each honestly.\n\nReturn ONLY JSON:\n{"places":[{"name":"<exact name>","address":"<full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"],"google_maps_query":"<name+area>"}]}\n\nInclude everything — even the average ones.`;
-  try{
-    const text=await callClaude([{role:"user",content:prompt}],null,"garyland-search");
-    const m=text.match(/\{[\s\S]*"places"[\s\S]*\}/);
-    if(!m)throw new Error("No results");
-    const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
-    if(!parsed.places?.length)throw new Error("No places found");
-    if(gPlaces.length){parsed.places.forEach(p=>{if(!p.place_id){const match=gPlaces.find(g=>g.name.toLowerCase()===p.name.toLowerCase()||p.name.toLowerCase().includes(g.name.toLowerCase())||g.name.toLowerCase().includes(p.name.toLowerCase()));if(match?.place_id)p.place_id=match.place_id;}});}
-    S.results=parsed;S.screen="results";render();
-  }catch(e){S.error=e.message;S.screen="loading";render();}
+  await doSearch();
 }
 
 async function doSearch(){
@@ -1469,6 +1450,7 @@ async function doSearch(){
     // Inject place_id from gPlaces by name-matching
     if(gPlaces.length){parsed.places.forEach(p=>{if(!p.place_id){const match=gPlaces.find(g=>g.name.toLowerCase()===p.name.toLowerCase()||p.name.toLowerCase().includes(g.name.toLowerCase())||g.name.toLowerCase().includes(p.name.toLowerCase()));if(match?.place_id)p.place_id=match.place_id;}});}
     clearInterval(S.loadInterval);S.loadInterval=null;
+    S.pageCache[S.pageOffset||0]=parsed;
     S.results=parsed;S.screen="results";S.searching=false;
     releaseWakeLock();
     render();
