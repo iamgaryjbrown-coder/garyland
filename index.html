@@ -1308,7 +1308,7 @@ function renderFoodPicker(){
       ${FOOD_TYPES.map(f=>`<button class="chip ${S.foodType===f?'on':''}" onclick="pickFood('${f}')">${f}</button>`).join("")}
       <button class="chip surprise-chip ${S.foodType==='surprise'?'on':''}" onclick="this.classList.add('surprise-spin');pickFood('surprise')">🎲 Surprise Me!</button>
     </div>
-    <button class="btn" style="width:100%;padding:12px 0;margin-bottom:8px;border-color:#d4a853;color:#d4a853;font-size:13px" onclick="S.foodType='ask-spud';openSpudChat()">🪲 Something else...</button>
+
     ${cat.needsSun?`<div style="margin-top:16px"><p class="sun-label">☀️ Sun check for</p>
     <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
     <div style="display:flex;align-items:center;gap:10px">
