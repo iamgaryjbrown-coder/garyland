@@ -1389,8 +1389,9 @@ async function doSearch(){
         :cat.id==='pub'||cat.id==='sun_pub'
           ?await Promise.all([
               googleNearbySearch(S.userLat,S.userLng,radiusM,null,'pub'),
-              googleNearbySearch(S.userLat,S.userLng,radiusM,'bar')
-            ]).then(([a,b])=>{const seen=new Set();return [...a,...b].filter(p=>{if(seen.has(p.place_id))return false;seen.add(p.place_id);return true;});})
+              googleNearbySearch(S.userLat,S.userLng,radiusM,null,'bar'),
+              googleNearbySearch(S.userLat,S.userLng,radiusM,null,'wine bar')
+            ]).then(results=>{const seen=new Set();return results.flat().filter(p=>{if(!p.place_id||seen.has(p.place_id))return false;seen.add(p.place_id);return true;});})
           :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
       // Sort by distance from user
       if(S.userLat&&S.userLng){
