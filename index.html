@@ -1340,7 +1340,32 @@ async function loadPrevResults(){
   S.pageOffset=Math.max(0,(S.pageOffset||0)-S.pageSize);
   S.searching=false;
   S.results=null;
-  await doSearch();
+  // Re-ask Spud to review the previous page slice from cached gPlaces
+  const cat=CATS.find(c=>c.id===S.cat);
+  if(!cat)return;
+  const offset=S.pageOffset;
+  const gPlaces=S.allGPlaces.slice(offset,offset+S.pageSize);
+  if(!gPlaces.length){S.screen="welcome";render();return;}
+  S.screen="loading";render();
+  const listing=gPlaces.map((r,i)=>{
+    let line=`${offset+i+1}. ${r.name} — ${r.address}`;
+    if(r.gRating)line+=` (Google: ${r.gRating}/5 from ${r.totalRatings} reviews)`;
+    if(r.priceLevel!=null)line+=` ${"£".repeat(r.priceLevel+1)}`;
+    if(r.isOpen===true)line+=" [open now]";
+    if(r.isOpen===false)line+=" [currently closed]";
+    return line;
+  }).join("\n");
+  const catDesc={sun_pub:"pubs with outdoor seating in direct sun",sun_eat:"restaurants with outdoor dining in direct sun",pub:"pubs",eat:"restaurants"}[cat.id]||"places";
+  const prompt=`Here are ${gPlaces.length} ${catDesc} near "${S.loc}" from Google:\n\n${listing}\n\nInclude ALL of them — do not filter any out. Rate each honestly.\n\nReturn ONLY JSON:\n{"places":[{"name":"<exact name>","address":"<full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"],"google_maps_query":"<name+area>"}]}\n\nInclude everything — even the average ones.`;
+  try{
+    const text=await callClaude([{role:"user",content:prompt}],null,"garyland-search");
+    const m=text.match(/\{[\s\S]*"places"[\s\S]*\}/);
+    if(!m)throw new Error("No results");
+    const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
+    if(!parsed.places?.length)throw new Error("No places found");
+    if(gPlaces.length){parsed.places.forEach(p=>{if(!p.place_id){const match=gPlaces.find(g=>g.name.toLowerCase()===p.name.toLowerCase()||p.name.toLowerCase().includes(g.name.toLowerCase())||g.name.toLowerCase().includes(p.name.toLowerCase()));if(match?.place_id)p.place_id=match.place_id;}});}
+    S.results=parsed;S.screen="results";render();
+  }catch(e){S.error=e.message;S.screen="loading";render();}
 }
 
 async function doSearch(){
