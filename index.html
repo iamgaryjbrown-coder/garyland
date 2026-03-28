@@ -1387,7 +1387,10 @@ async function doSearch(){
       const raw=foodTypeStr
         ?await googleTextSearch(foodTypeStr+' restaurant '+q.loc,S.userLat,S.userLng,radiusM)
         :cat.id==='pub'||cat.id==='sun_pub'
-          ?await googleNearbySearch(S.userLat,S.userLng,radiusM,null,'pub')
+          ?await Promise.all([
+              googleNearbySearch(S.userLat,S.userLng,radiusM,null,'pub'),
+              googleNearbySearch(S.userLat,S.userLng,radiusM,'bar')
+            ]).then(([a,b])=>{const seen=new Set();return [...a,...b].filter(p=>{if(seen.has(p.place_id))return false;seen.add(p.place_id);return true;});})
           :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
       // Sort by distance from user
       if(S.userLat&&S.userLng){
