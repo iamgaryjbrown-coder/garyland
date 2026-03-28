@@ -170,7 +170,7 @@ const CATS=[
   {id:"sun_pub",icon:"☀️🍺",label:"Pub in the Sun",needsSun:true,ratingFloor:0,gType:"bar",chips:[]},
   {id:"sun_eat",icon:"☀️🍽️",label:"Restaurant in the Sun",needsSun:true,ratingFloor:7,gType:"restaurant",chips:[]},
   {id:"pub",icon:"🍻",label:"Pub O'Clock!",needsSun:false,ratingFloor:0,gType:"bar",chips:[]},
-  {id:"eat",icon:"🥘",label:"Eat Out!",needsSun:false,ratingFloor:7,gType:"restaurant",chips:[]},
+  {id:"eat",icon:"🥘",label:"Eat Out!",needsSun:false,ratingFloor:0,gType:"restaurant",chips:[]},
 ];
 
 const FOOD_TYPES=["Italian","Pizza","Indian","Greek","Thai","Japanese","Sushi","Burgers","Lebanese","Spanish","Fish","Vegetarian","Vegan"];
@@ -1407,7 +1407,11 @@ async function doSearch(){
               googleNearbySearch(S.userLat,S.userLng,radiusM,null,'bar'),
               googleNearbySearch(S.userLat,S.userLng,radiusM,null,'wine bar')
             ]).then(results=>{const seen=new Set();return results.flat().filter(p=>{if(!p.place_id||seen.has(p.place_id))return false;seen.add(p.place_id);return true;});})
-          :await googleNearbySearch(S.userLat,S.userLng,radiusM,gType);
+          :await Promise.all([
+              googleNearbySearch(S.userLat,S.userLng,radiusM,'restaurant'),
+              googleNearbySearch(S.userLat,S.userLng,radiusM,null,'restaurant'),
+              googleNearbySearch(S.userLat,S.userLng,radiusM,null,'cafe')
+            ]).then(results=>{const seen=new Set();return results.flat().filter(p=>{if(!p.place_id||seen.has(p.place_id))return false;seen.add(p.place_id);return true;});});
       // Sort by distance from user
       if(S.userLat&&S.userLng){
         const toRad=x=>x*Math.PI/180;
