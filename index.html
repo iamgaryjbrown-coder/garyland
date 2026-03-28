@@ -886,6 +886,9 @@ function renderResults(){
   });
   // Pagination + Ask Spud buttons
   h+=`<div style="display:flex;flex-direction:column;gap:10px;padding-top:8px">`;
+  if((S.pageOffset||0)>0){
+    h+=`<button class="btn" style="width:100%;padding:14px 0;font-size:15px;margin-bottom:8px" onclick="loadPrevResults()">← Previous page</button>`;
+  }
   if(hasMore){
     h+=`<button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="loadMoreResults()">More places →</button>`;
   }
@@ -1329,6 +1332,12 @@ function goBack(){
 
 async function loadMoreResults(){
   S.pageOffset=(S.pageOffset||0)+S.pageSize;
+  S.searching=false;
+  S.results=null;
+  await doSearch();
+}
+async function loadPrevResults(){
+  S.pageOffset=Math.max(0,(S.pageOffset||0)-S.pageSize);
   S.searching=false;
   S.results=null;
   await doSearch();
