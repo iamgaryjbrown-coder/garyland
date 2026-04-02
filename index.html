@@ -116,11 +116,7 @@ input[type="range"]{accent-color:#d4a853}
 .favs-back-btn{position:absolute;top:calc(env(safe-area-inset-top,12px) + 8px);left:12px;z-index:20;background:rgba(26,25,23,0.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid #2a2826;color:#8a8478;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif}
 .favs-back-btn:active{color:#d4a853;border-color:#d4a853}
 .favs-globe-wrap{flex:0 0 50%;position:relative;overflow:hidden;background:#000}
-.favs-globe-wrap .maplibregl-ctrl-top-right{top:calc(env(safe-area-inset-top,0px) + 8px)}
-.favs-globe-wrap .maplibregl-ctrl-group{background:rgba(26,25,23,0.8);border:1px solid #2a2826;border-radius:8px}
-.favs-globe-wrap .maplibregl-ctrl-group button{background:transparent}
-.favs-globe-wrap .maplibregl-ctrl-group button+button{border-top:1px solid #2a2826}
-.favs-globe-wrap .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:invert(0.6)}
+.favs-globe-wrap>div{width:100%!important;height:100%!important}
 .favs-panel{flex:1;display:flex;overflow:hidden;border-top:1px solid #2a2826}
 .favs-flag-strip{width:44px;background:#0a0a09;border-right:1px solid #1a1917;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;flex-shrink:0}
 .favs-flag-strip::-webkit-scrollbar{display:none}
@@ -176,23 +172,20 @@ function loadLeaflet(){
   return leafletPromise;
 }
 
-// ── MapLibre GL Loader (for favourites globe) ──
-let maplibreReady=false,maplibrePromise=null;
-function loadMapLibre(){
-  if(maplibreReady)return Promise.resolve();
-  if(maplibrePromise)return maplibrePromise;
-  maplibrePromise=new Promise((res,rej)=>{
-    if(window.maplibregl){maplibreReady=true;res();return;}
-    const css=document.createElement('link');css.rel='stylesheet';
-    css.href='https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css';
-    document.head.appendChild(css);
+// ── Globe.gl Loader (for favourites 3D globe) ──
+let globeGlReady=false,globeGlPromise=null;
+function loadGlobeGl(){
+  if(globeGlReady)return Promise.resolve();
+  if(globeGlPromise)return globeGlPromise;
+  globeGlPromise=new Promise((res,rej)=>{
+    if(window.Globe){globeGlReady=true;res();return;}
     const js=document.createElement('script');
-    js.src='https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js';
-    js.onload=()=>{maplibreReady=true;res();};
-    js.onerror=()=>rej(new Error('MapLibre GL failed'));
+    js.src='https://unpkg.com/globe.gl';
+    js.onload=()=>{globeGlReady=true;res();};
+    js.onerror=()=>rej(new Error('Globe.gl failed'));
     document.head.appendChild(js);
   });
-  return maplibrePromise;
+  return globeGlPromise;
 }
 
 // ── SunCalc ──
@@ -253,7 +246,7 @@ function saveFavourites(favs){try{localStorage.setItem('garyland_favourites',JSO
 let favourites=loadFavourites();
 // Merge backed-up favourites: add missing ones, enrich existing with geo data
 (function mergeSeedFavs(){
-  const seed=[{"name":"La Revuelta El Médano","address":"Av. José Miguel Galván Bello, 23, 38612 El Médano, Santa Cruz de Tenerife","rating":10,"summary":"4.8 stars, 98 reviews. Wine, gastro food and reportedly vinyl records — a proper little gem in El Médano. Open daily, morning and evening.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0453,"lng":-16.5364,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"Marisquería Agua y Sal","address":"C. Callao Hondo, 22, 38588 San Miguel de Tajao, Santa Cruz de Tenerife","rating":9,"summary":"4.5 stars, 6629 reviews — seriously well reviewed seafood restaurant. In San Miguel de Tajao, a tiny fishing village. Open Wed–Sun from 12:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0867,"lng":-16.4172,"searchLocation":"Tenerife","country":"Spain","country_code":"ES","city":"San Miguel de Tajao"},{"name":"La Mordidita","address":"Pl. de Ireneo Gonzalez, 10, 38002 Santa Cruz de Tenerife","rating":9,"summary":"4.5 stars, 455 reviews. Great little spot for lunch or dinner. Open Tue–Sat 1:30pm–10:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4695,"lng":-16.2538,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Kebab Alhambra Santa Cruz","address":"Pl. San Juan Bautista, 4, 38005 Santa Cruz de Tenerife","rating":9,"summary":"4.6 stars, 352 reviews. Late night kebab spot open until midnight every day.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4682,"lng":-16.2546,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Cafetería Olisero","address":"C. Heliodoro Rodríguez López, 22, Santa Cruz de Tenerife","rating":9,"summary":"Opens 6:30am weekdays, 7:30am Saturday. Reliable local cafetería with 232 reviews.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0448,"lng":-16.536,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"La Boqueria Taberna El Médano","address":"C. Iriarte, 14, 38612 El Médano, Santa Cruz de Tenerife","rating":9,"summary":"4.7 stars, 629 reviews. Excellent taberna in El Médano. Open Thursday evenings from 7pm. Closed Monday and Tuesday.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.044,"lng":-16.5355,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"CRUDO Bar","address":"Calle Clavel, 9, 38002 Santa Cruz de Tenerife","rating":9,"summary":"Craft cocktail bar with serious soul — coctelería de autor, live music events and a proper late-night vibe. Open until 2am Mon–Thu, 3:30am Fri–Sat.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🍻","dateAdded":"2026-03-26","lat":28.4689,"lng":-16.2519,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Restaurante Veinte 04 Surf Cafe","address":"Calle Hno Pedro, 2, 38612 El Médano, Santa Cruz de Tenerife","rating":8,"summary":"4 stars, 1657 reviews. Surf cafe right in El Médano, opens 9am every day. Great atmosphere, outdoor seating.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0448,"lng":-16.5368,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"Restaurante Manglar","address":"Plaza de España Pabellón 2, 38003 Santa Cruz de Tenerife","rating":8,"summary":"4.1 stars, 378 reviews. Right on Plaza de España — great location by the seafront. Open Tue–Sun from 12:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4685,"lng":-16.2485,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Bodegón El Puntero","address":"Calle San Clemente, 13, 38003 Santa Cruz de Tenerife","rating":9,"summary":"A proper Canarian bodegón — bacalao, pulpo and dorada done right, at prices that won't hurt. 4.6 on Google from 605 reviews.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4692,"lng":-16.2501,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Gastrobar Cortxo","address":"Pl. de Ireneo Gonzalez, 5, 38003 Santa Cruz de Tenerife","rating":9,"summary":"4.4 stars, 1026 reviews. Gastrobar on a plaza in central Santa Cruz. Open Tue–Sat 1:30pm–11pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4696,"lng":-16.2537,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"}];
+  const seed=[{"name":"La Revuelta El Médano","address":"Av. José Miguel Galván Bello, 23, 38612 El Médano, Santa Cruz de Tenerife","rating":10,"summary":"4.8 stars, 98 reviews. Wine, gastro food and reportedly vinyl records — a proper little gem in El Médano. Open daily, morning and evening.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0453,"lng":-16.5364,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"Marisquería Agua y Sal","address":"C. Callao Hondo, 22, 38588 San Miguel de Tajao, Santa Cruz de Tenerife","rating":9,"summary":"4.5 stars, 6629 reviews — seriously well reviewed seafood restaurant. In San Miguel de Tajao, a tiny fishing village. Open Wed–Sun from 12:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0867,"lng":-16.4172,"searchLocation":"Tenerife","country":"Spain","country_code":"ES","city":"San Miguel de Tajao"},{"name":"La Mordidita","address":"Pl. de Ireneo Gonzalez, 10, 38002 Santa Cruz de Tenerife","rating":9,"summary":"4.5 stars, 455 reviews. Great little spot for lunch or dinner. Open Tue–Sat 1:30pm–10:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4695,"lng":-16.2538,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Kebab Alhambra Santa Cruz","address":"Pl. San Juan Bautista, 4, 38005 Santa Cruz de Tenerife","rating":9,"summary":"4.6 stars, 352 reviews. Late night kebab spot open until midnight every day.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4682,"lng":-16.2546,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Cafetería Olisero","address":"C. Heliodoro Rodríguez López, 22, Santa Cruz de Tenerife","rating":9,"summary":"Opens 6:30am weekdays, 7:30am Saturday. Reliable local cafetería with 232 reviews.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0448,"lng":-16.536,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"La Boqueria Taberna El Médano","address":"C. Iriarte, 14, 38612 El Médano, Santa Cruz de Tenerife","rating":9,"summary":"4.7 stars, 629 reviews. Excellent taberna in El Médano. Open Thursday evenings from 7pm. Closed Monday and Tuesday.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.044,"lng":-16.5355,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"CRUDO Bar","address":"Calle Clavel, 9, 38002 Santa Cruz de Tenerife","rating":9,"summary":"Craft cocktail bar with serious soul — coctelería de autor, live music events and a proper late-night vibe. Open until 2am Mon–Thu, 3:30am Fri–Sat.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🍻","dateAdded":"2026-03-26","lat":28.4689,"lng":-16.2519,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Restaurante Veinte 04 Surf Cafe","address":"Calle Hno Pedro, 2, 38612 El Médano, Santa Cruz de Tenerife","rating":8,"summary":"4 stars, 1657 reviews. Surf cafe right in El Médano, opens 9am every day. Great atmosphere, outdoor seating.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0448,"lng":-16.5368,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"Restaurante Manglar","address":"Plaza de España Pabellón 2, 38003 Santa Cruz de Tenerife","rating":8,"summary":"4.1 stars, 378 reviews. Right on Plaza de España — great location by the seafront. Open Tue–Sun from 12:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4685,"lng":-16.2485,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Bodegón El Puntero","address":"Calle San Clemente, 13, 38003 Santa Cruz de Tenerife","rating":9,"summary":"A proper Canarian bodegón — bacalao, pulpo and dorada done right, at prices that won't hurt. 4.6 on Google from 605 reviews.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4692,"lng":-16.2501,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Gastrobar Cortxo","address":"Pl. de Ireneo Gonzalez, 5, 38003 Santa Cruz de Tenerife","rating":9,"summary":"4.4 stars, 1026 reviews. Gastrobar on a plaza in central Santa Cruz. Open Tue–Sat 1:30pm–11pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4696,"lng":-16.2537,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Etna pizza & burger","address":"Fbg Auriac, Lauzerte","rating":7,"summary":"Pizza and burger spot in Lauzerte.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🍕","dateAdded":"2026-04-01","lat":44.255,"lng":1.139,"searchLocation":"Lauzerte","country":"France","country_code":"FR","city":"Lauzerte"}];
   let changed=false;
   seed.forEach(s=>{
     const existing=favourites.find(f=>f.name===s.name);
@@ -1289,13 +1282,13 @@ function renderFavourites(){
   // Show list immediately with whatever geo data we have
   renderFavList();
 
-  // Load globe
-  loadMapLibre().then(()=>{
+  // Load 3D globe
+  loadGlobeGl().then(()=>{
     initFavGlobe(cLat,cLng);
     addFavMarkers();
   }).catch(()=>{
     const g=document.getElementById('fav-globe');
-    if(g)g.innerHTML='<p style="color:#e57373;padding:20px;text-align:center;padding-top:40%">Map failed to load</p>';
+    if(g)g.innerHTML='<p style="color:#e57373;padding:20px;text-align:center;padding-top:40%">Globe failed to load</p>';
   });
 
   // Enrich geo data progressively (updates list as results arrive)
@@ -1303,53 +1296,49 @@ function renderFavourites(){
 }
 
 function initFavGlobe(lat,lng){
-  if(favGlobe){favGlobe.remove();favGlobe=null;}
+  const container=document.getElementById('fav-globe');
+  if(!container)return;
+  container.innerHTML='';
+  const w=container.clientWidth,h=container.clientHeight;
   const hasMultiple=favourites.filter(f=>f.lat&&f.lng).length>1;
-  const mapOpts={
-    container:'fav-globe',
-    style:{
-      version:8,
-      sources:{satellite:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:18,attribution:'\u00a9 Esri'}},
-      layers:[{id:'satellite',type:'raster',source:'satellite'}]
-    },
-    center:[lng,lat],
-    zoom:1.5,
-    maxPitch:85,
-    attributionControl:false
-  };
-  // Try setting globe projection in constructor (MapLibre v4+)
-  try{mapOpts.projection={type:'globe'};}catch(e){}
-  favGlobe=new maplibregl.Map(mapOpts);
-  favGlobe.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
-  favGlobe.on('load',()=>{
-    // Fallback: try setProjection if constructor didn't work
-    try{if(favGlobe.setProjection)favGlobe.setProjection({type:'globe'});}catch(e){}
-    try{if(favGlobe.setFog)favGlobe.setFog({color:'rgba(80,140,200,0.08)','high-color':'rgba(40,80,160,0.3)','space-color':'rgb(5,5,15)','star-intensity':0.6,'horizon-blend':0.04});}catch(e){}
-    // Current location dot
-    if(S.userLat&&S.userLng){
-      const dot=document.createElement('div');dot.className='fav-loc-dot';
-      new maplibregl.Marker({element:dot}).setLngLat([S.userLng,S.userLat]).addTo(favGlobe);
-    }
-    // Fly in to favourites area after showing full globe
-    const targetZoom=hasMultiple?3.5:favourites.length===1?10:4;
-    setTimeout(()=>{favGlobe.flyTo({center:[lng,lat],zoom:targetZoom,duration:2500,essential:true});},800);
-  });
+
+  favGlobe=Globe()
+    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+    .width(w).height(h)
+    .showAtmosphere(true)
+    .atmosphereColor('lightskyblue')
+    .atmosphereAltitude(0.15)
+    .htmlElementsData([])
+    .htmlElement(d=>{
+      const el=document.createElement('div');el.className='fav-globe-pin';
+      el.textContent=d.catIcon||'\u{1F4CD}';
+      el.onclick=()=>{
+        const item=document.getElementById('fav-item-'+d.idx);
+        if(item){item.scrollIntoView({behavior:'smooth',block:'center'});item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
+      };
+      return el;
+    })
+    .htmlLat('lat').htmlLng('lng').htmlAltitude(0.02)
+    .pointOfView({lat,lng,altitude:2.5},0)
+    (container);
+
+  // Current location pulsing ring
+  if(S.userLat&&S.userLng){
+    favGlobe.ringsData([{lat:S.userLat,lng:S.userLng}])
+      .ringColor(()=>'rgba(74,144,217,0.9)')
+      .ringMaxRadius(1.5).ringPropagationSpeed(1).ringRepeatPeriod(2000);
+  }
+  // Fly in after showing full globe
+  const alt=hasMultiple?0.7:favourites.length===1?0.15:1.5;
+  setTimeout(()=>{favGlobe.pointOfView({lat,lng,altitude:alt},2500);},800);
 }
 
 function addFavMarkers(){
-  favMarkers.forEach(m=>m.remove());favMarkers=[];
   if(!favGlobe)return;
-  favourites.forEach((f,i)=>{
-    if(!f.lat||!f.lng)return;
-    const el=document.createElement('div');el.className='fav-globe-pin';
-    el.textContent=f.catIcon||'\u{1F4CD}';
-    el.onclick=()=>{
-      const item=document.getElementById('fav-item-'+i);
-      if(item){item.scrollIntoView({behavior:'smooth',block:'center'});item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
-    };
-    const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat([f.lng,f.lat]).addTo(favGlobe);
-    favMarkers.push(m);
-  });
+  const pins=favourites.filter(f=>f.lat&&f.lng).map((f,i)=>({lat:f.lat,lng:f.lng,catIcon:f.catIcon||'\u{1F4CD}',idx:i}));
+  favGlobe.htmlElementsData(pins);
 }
 
 function renderFavList(){
@@ -1388,7 +1377,7 @@ function renderFavList(){
 
 function flyToFav(idx){
   const f=favourites[idx];if(!f?.lat||!f?.lng||!favGlobe)return;
-  favGlobe.flyTo({center:[f.lng,f.lat],zoom:13,duration:2000,essential:true});
+  favGlobe.pointOfView({lat:f.lat,lng:f.lng,altitude:0.12},2000);
   const item=document.getElementById('fav-item-'+idx);
   if(item){item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
 }
@@ -1398,13 +1387,13 @@ function scrollToCountry(cc){
   if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
   const groups=groupFavsByLocation();const g=groups[cc];if(!g)return;
   const first=Object.values(g.cities)[0]?.[0];
-  if(first?.lat&&first?.lng&&favGlobe)favGlobe.flyTo({center:[first.lng,first.lat],zoom:5,duration:2000});
+  if(first?.lat&&first?.lng&&favGlobe)favGlobe.pointOfView({lat:first.lat,lng:first.lng,altitude:0.5},2000);
 }
 
 function closeFavourites(){
   favEnriching=false;
-  if(favGlobe){favGlobe.remove();favGlobe=null;}
-  favMarkers=[];favPhotos={};S.screen="welcome";S.cat=null;render();
+  const gc=document.getElementById('fav-globe');if(gc)gc.innerHTML='';
+  favGlobe=null;favMarkers=[];favPhotos={};S.screen="welcome";S.cat=null;render();
 }
 function openFavMap(i){const f=favourites[i];if(f)showMapPopup(f.name,f.address,f.lat||null,f.lng||null);}
 function openFavLightbox(card,idx){
