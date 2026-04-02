@@ -1207,9 +1207,18 @@ let favGlobe=null,favMarkers=[],favGeoCache={},favEnriching=false;
 let favPhotos={};
 
 function countryFlag(code){
-  if(!code||code.length!==2)return'\u{1F30D}';
+  if(!code||code.length!==2||!/^[A-Z]{2}$/i.test(code))return'\u{1F30D}';
   return String.fromCodePoint(...[...code.toUpperCase()].map(c=>0x1F1E6+c.charCodeAt(0)-65));
 }
+
+// Migrate old favourites: fix broken catIcon text like "U0001f4cd"
+(function migrateFavs(){
+  let changed=false;
+  favourites.forEach(f=>{
+    if(f.catIcon&&/^U000/i.test(f.catIcon)){f.catIcon='\u{1F4CD}';changed=true;}
+  });
+  if(changed)saveFavourites(favourites);
+})();
 
 function groupFavsByLocation(){
   const groups={};
