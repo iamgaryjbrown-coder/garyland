@@ -1282,10 +1282,9 @@ function renderFavourites(){
   // Show list immediately with whatever geo data we have
   renderFavList();
 
-  // Load 3D globe
+  // Load 3D globe (addFavMarkers is called inside onGlobeReady)
   loadGlobeGl().then(()=>{
     initFavGlobe(cLat,cLng);
-    addFavMarkers();
   }).catch(()=>{
     const g=document.getElementById('fav-globe');
     if(g)g.innerHTML='<p style="color:#e57373;padding:20px;text-align:center;padding-top:40%">Globe failed to load</p>';
@@ -1302,6 +1301,9 @@ function initFavGlobe(lat,lng){
   const w=container.clientWidth,h=container.clientHeight;
   const hasMultiple=favourites.filter(f=>f.lat&&f.lng).length>1;
 
+  // Build pin data
+  const pins=favourites.filter(f=>f.lat&&f.lng).map((f,i)=>({lat:f.lat,lng:f.lng,catIcon:f.catIcon||'\u{1F4CD}',idx:i}));
+
   favGlobe=Globe()
     .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
     .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
@@ -1310,33 +1312,43 @@ function initFavGlobe(lat,lng){
     .showAtmosphere(true)
     .atmosphereColor('lightskyblue')
     .atmosphereAltitude(0.15)
-    .htmlElementsData([])
+    // Pins as HTML elements — set data upfront
+    .htmlElementsData(pins)
     .htmlElement(d=>{
       const el=document.createElement('div');el.className='fav-globe-pin';
-      el.textContent=d.catIcon||'\u{1F4CD}';
+      el.textContent=d.catIcon;
+      el.style.pointerEvents='auto';el.style.cursor='pointer';
+      el.style.transition='opacity 250ms';
       el.onclick=()=>{
-        // Fly globe in close to this pin
         if(favGlobe)favGlobe.pointOfView({lat:d.lat,lng:d.lng,altitude:0.12},1500);
         const item=document.getElementById('fav-item-'+d.idx);
         if(item){item.scrollIntoView({behavior:'smooth',block:'center'});item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
       };
       return el;
     })
-    .htmlLat('lat').htmlLng('lng').htmlAltitude(0.01)
+    .htmlElementVisibilityModifier((el,isVisible)=>{el.style.opacity=isVisible?1:0;})
     .pointOfView({lat,lng,altitude:2.5},0)
     (container);
 
-  // Tame the controls once globe is ready
+  // Configure once globe scene is ready
   favGlobe.onGlobeReady(()=>{
-    setTimeout(()=>{
-      const c=favGlobe.controls();
-      c.rotateSpeed=0.3;
-      c.zoomSpeed=0.4;
-      c.enableDamping=true;
-      c.dampingFactor=0.12;
-      c.minDistance=120;
-      c.maxDistance=600;
-    },0);
+    // Tame controls — apply multiple times to survive any internal resets
+    const applyControls=()=>{
+      try{
+        const c=favGlobe.controls();
+        if(!c)return;
+        c.rotateSpeed=0.3;
+        c.zoomSpeed=0.4;
+        c.enableDamping=true;
+        c.dampingFactor=0.12;
+        c.minDistance=101;
+        c.maxDistance=600;
+      }catch(e){}
+    };
+    applyControls();
+    setTimeout(applyControls,100);
+    setTimeout(applyControls,500);
+
     // Current location pulsing ring
     if(S.userLat&&S.userLng){
       favGlobe.ringsData([{lat:S.userLat,lng:S.userLng}])
