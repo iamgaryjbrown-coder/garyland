@@ -111,14 +111,38 @@ input[type="range"]{accent-color:#d4a853}
 .fav-btn{background:none;border:none;font-size:20px;cursor:pointer;padding:2px 4px;transition:transform 0.15s;line-height:1}
 .fav-btn:active{transform:scale(1.3)}
 
-/* ── Favourites Screen ── */
-.favs-screen{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#000;z-index:10;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none}
-.fav-card{background:#1a1917;border-radius:12px;border:1px solid #2a2826;padding:14px;display:flex;gap:12px;align-items:flex-start}
-.fav-card-body{flex:1;min-width:0}
-.fav-card-name{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#e8e2d6}
-.fav-card-addr{font-size:12px;color:#7dbd7d;margin-top:2px;cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a}
-.fav-card-meta{font-size:11px;color:#5a5548;margin-top:4px}
-.fav-remove{background:none;border:none;font-size:18px;cursor:pointer;padding:2px;color:#e57373;flex-shrink:0}
+/* ── Favourites Globe Screen ── */
+.favs-screen{position:fixed;left:0;top:0;width:100vw;max-width:100vw;height:100%;background:#000;z-index:10;display:flex;flex-direction:column;overflow:hidden}
+.favs-back-btn{position:absolute;top:calc(env(safe-area-inset-top,12px) + 8px);left:12px;z-index:20;background:rgba(26,25,23,0.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid #2a2826;color:#8a8478;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.favs-back-btn:active{color:#d4a853;border-color:#d4a853}
+.favs-globe-wrap{flex:0 0 50%;position:relative;overflow:hidden;background:#000}
+.favs-globe-wrap .maplibregl-ctrl-top-right{top:calc(env(safe-area-inset-top,0px) + 8px)}
+.favs-globe-wrap .maplibregl-ctrl-group{background:rgba(26,25,23,0.8);border:1px solid #2a2826;border-radius:8px}
+.favs-globe-wrap .maplibregl-ctrl-group button{background:transparent}
+.favs-globe-wrap .maplibregl-ctrl-group button+button{border-top:1px solid #2a2826}
+.favs-globe-wrap .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:invert(0.6)}
+.favs-panel{flex:1;display:flex;overflow:hidden;border-top:1px solid #2a2826}
+.favs-flag-strip{width:44px;background:#0a0a09;border-right:1px solid #1a1917;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;flex-shrink:0}
+.favs-flag-strip::-webkit-scrollbar{display:none}
+.flag-tab{background:none;border:none;font-size:20px;cursor:pointer;padding:6px 4px;border-radius:8px;transition:background 0.15s;line-height:1}
+.flag-tab:active,.flag-tab.active{background:rgba(212,168,83,0.15)}
+.favs-list-area{flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
+.fav-country-section{padding-bottom:4px}
+.fav-country-header{font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:#d4a853;padding:12px 14px 4px;position:sticky;top:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1}
+.fav-city-header{font-size:11px;color:#6a645a;font-weight:600;padding:8px 14px 4px;text-transform:uppercase;letter-spacing:0.5px}
+.fav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid rgba(42,40,38,0.4)}
+.fav-item:active{background:rgba(212,168,83,0.06)}
+.fav-item-flash{background:rgba(212,168,83,0.15)!important;transition:background 0.3s}
+.fav-item-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center}
+.fav-item-body{flex:1;min-width:0}
+.fav-item-name{font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:#e8e2d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav-item-addr{font-size:11px;color:#5a5548;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.fav-globe-pin{width:34px;height:34px;background:rgba(26,25,23,0.85);border:2px solid #d4a853;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:transform 0.15s;box-shadow:0 2px 8px rgba(0,0,0,0.5)}
+.fav-globe-pin:hover{transform:scale(1.2)}
+.fav-loc-dot{width:14px;height:14px;background:#4A90D9;border:2.5px solid white;border-radius:50%;box-shadow:0 0 0 0 rgba(74,144,217,0.4);animation:loc-pulse 2s infinite}
+@keyframes loc-pulse{0%{box-shadow:0 0 0 0 rgba(74,144,217,0.4)}70%{box-shadow:0 0 0 12px rgba(74,144,217,0)}100%{box-shadow:0 0 0 0 rgba(74,144,217,0)}}
+.fav-remove{background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:#5a5548;flex-shrink:0;transition:color 0.15s}
+.fav-remove:active{color:#e57373}
 .photo-refresh{position:absolute;right:12px;top:12px;width:28px;height:28px;border-radius:50%;background:rgba(26,25,23,0.85);border:1px solid #2a2826;color:#d4a853;font-size:16px;cursor:pointer;z-index:10}
 </style>
 </head>
@@ -150,6 +174,25 @@ function loadLeaflet(){
     document.head.appendChild(js);
   });
   return leafletPromise;
+}
+
+// ── MapLibre GL Loader (for favourites globe) ──
+let maplibreReady=false,maplibrePromise=null;
+function loadMapLibre(){
+  if(maplibreReady)return Promise.resolve();
+  if(maplibrePromise)return maplibrePromise;
+  maplibrePromise=new Promise((res,rej)=>{
+    if(window.maplibregl){maplibreReady=true;res();return;}
+    const css=document.createElement('link');css.rel='stylesheet';
+    css.href='https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css';
+    document.head.appendChild(css);
+    const js=document.createElement('script');
+    js.src='https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js';
+    js.onload=()=>{maplibreReady=true;res();};
+    js.onerror=()=>rej(new Error('MapLibre GL failed'));
+    document.head.appendChild(js);
+  });
+  return maplibrePromise;
 }
 
 // ── SunCalc ──
@@ -216,7 +259,7 @@ function toggleFavourite(i){
   if(idx>=0){favourites.splice(idx,1);}
   else{
     const c=cardCoords[i];
-    favourites.push({name:p.name,address:p.address,rating:p.rating,summary:p.summary,price_level:p.price_level,highlights:p.highlights||[],sun_verdict:p.sun_verdict||"",catIcon:S.query?.cat?.icon||"📍",dateAdded:new Date().toISOString().slice(0,10),lat:c?.lat||null,lng:c?.lng||null});
+    favourites.push({name:p.name,address:p.address,rating:p.rating,summary:p.summary,price_level:p.price_level,highlights:p.highlights||[],sun_verdict:p.sun_verdict||"",catIcon:S.query?.cat?.icon||"📍",dateAdded:new Date().toISOString().slice(0,10),lat:c?.lat||null,lng:c?.lng||null,searchLocation:S.loc||""});
   }
   saveFavourites(favourites);
   // Update just the heart button without re-rendering entire results
@@ -227,7 +270,8 @@ function removeFavourite(idx){
   if(!confirm('Remove from favourites?'))return;
   favourites.splice(idx,1);
   saveFavourites(favourites);
-  renderFavourites();
+  if(S.screen==='favourites'){renderFavList();addFavMarkers();}
+  else renderFavourites();
 }
 const app=document.getElementById("app");
 const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -1152,108 +1196,185 @@ function clearSpudChat(){
 function closeSpudChat(){S.screen="welcome";S.cat=null;render();}
 
 // ═══════════════════════════════════════
-// Favourites
+// Favourites — Globe + Folder View
 // ═══════════════════════════════════════
+let favGlobe=null,favMarkers=[],favGeoCache={},favEnriching=false;
+let favPhotos={};
+
+function countryFlag(code){
+  if(!code||code.length!==2)return'\u{1F30D}';
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c=>0x1F1E6+c.charCodeAt(0)-65));
+}
+
+function groupFavsByLocation(){
+  const groups={};
+  favourites.forEach((f,i)=>{
+    const cc=f.country_code||'__';
+    const country=f.country||(cc==='__'?'Uncategorised':'Unknown');
+    const city=f.city||f.searchLocation||'Unknown';
+    if(!groups[cc])groups[cc]={country,flag:countryFlag(cc),cities:{}};
+    if(!groups[cc].cities[city])groups[cc].cities[city]=[];
+    groups[cc].cities[city].push({...f,_idx:i});
+  });
+  return groups;
+}
+
+async function reverseGeoNom(lat,lng){
+  const key=`${lat.toFixed(2)}_${lng.toFixed(2)}`;
+  if(favGeoCache[key])return favGeoCache[key];
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,{headers:{'User-Agent':'GaryLand/1.0'}});
+    const d=await r.json();
+    const info={country:d.address?.country||'Unknown',country_code:(d.address?.country_code||'').toUpperCase(),city:d.address?.city||d.address?.town||d.address?.village||d.address?.state||'Unknown'};
+    favGeoCache[key]=info;return info;
+  }catch(e){return{country:'Unknown',country_code:'',city:'Unknown'};}
+}
+
+async function enrichFavGeoProgressive(){
+  favEnriching=true;
+  let changed=false;
+  for(const f of favourites){
+    if(!favEnriching)break;
+    if(f.country_code||!f.lat||!f.lng)continue;
+    const info=await reverseGeoNom(f.lat,f.lng);
+    Object.assign(f,info);changed=true;
+    if(S.screen==='favourites')renderFavList();
+    await new Promise(r=>setTimeout(r,1100));
+  }
+  if(changed)saveFavourites(favourites);
+  favEnriching=false;
+}
+
 function openFavourites(){S.screen="favourites";render();}
 
-// Extract location (city/region) from address for grouping
-function extractLocation(addr){
-  if(!addr)return'Unknown';
-  // Split by comma, take last 2-3 meaningful parts
-  const parts=addr.split(',').map(p=>p.trim()).filter(p=>p&&!/^\d+$/.test(p)&&!/^[A-Z]{1,2}\d/.test(p));
-  if(parts.length===0)return'Unknown';
-  if(parts.length===1)return parts[0];
-  // Return city + country or last two meaningful parts
-  // Skip postcodes, street numbers
-  const meaningful=parts.filter(p=>!/^\d/.test(p)&&p.length>2);
-  if(meaningful.length>=2)return meaningful.slice(-2).join(', ');
-  return meaningful[meaningful.length-1]||parts[parts.length-1];
+function renderFavourites(){
+  const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;
+  app.innerHTML=`<div class="favs-screen">
+    <button class="favs-back-btn" onclick="closeFavourites()">\u2190 Back</button>
+    <div class="favs-globe-wrap" id="fav-globe"></div>
+    <div class="favs-panel">
+      <div class="favs-flag-strip" id="fav-flags"></div>
+      <div class="favs-list-area" id="fav-list">
+        <div style="padding:20px;text-align:center"><p style="color:#5a5548;font-size:13px">Loading map\u2026</p></div>
+      </div>
+    </div>
+  </div>`;
+
+  // Show list immediately with whatever geo data we have
+  renderFavList();
+
+  // Load globe
+  loadMapLibre().then(()=>{
+    initFavGlobe(cLat,cLng);
+    addFavMarkers();
+  }).catch(()=>{
+    const g=document.getElementById('fav-globe');
+    if(g)g.innerHTML='<p style="color:#e57373;padding:20px;text-align:center;padding-top:40%">Map failed to load</p>';
+  });
+
+  // Enrich geo data progressively (updates list as results arrive)
+  enrichFavGeoProgressive();
 }
 
-let favExpandedGroups={}; // Track which groups are expanded
+function initFavGlobe(lat,lng){
+  if(favGlobe){favGlobe.remove();favGlobe=null;}
+  const hasMultiple=favourites.filter(f=>f.lat&&f.lng).length>1;
+  favGlobe=new maplibregl.Map({
+    container:'fav-globe',
+    style:{
+      version:8,
+      sources:{carto:{type:'raster',tiles:['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],tileSize:256,attribution:'\u00a9 CartoDB \u00a9 OSM'}},
+      layers:[{id:'carto',type:'raster',source:'carto'}]
+    },
+    center:[lng,lat],
+    zoom:hasMultiple?2:favourites.length===1?8:4,
+    attributionControl:false
+  });
+  favGlobe.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+  favGlobe.on('load',()=>{
+    try{
+      if(favGlobe.setProjection)favGlobe.setProjection({type:'globe'});
+      if(favGlobe.setFog)favGlobe.setFog({color:'rgb(0,0,0)','high-color':'rgb(0,0,0)','space-color':'rgb(5,5,15)','star-intensity':0.8,'horizon-blend':0.01});
+    }catch(e){}
+    if(S.userLat&&S.userLng){
+      const dot=document.createElement('div');dot.className='fav-loc-dot';
+      new maplibregl.Marker({element:dot}).setLngLat([S.userLng,S.userLat]).addTo(favGlobe);
+    }
+  });
+}
 
-function renderFavourites(){
-  let h=`<div class="favs-screen"><div style="max-width:480px;margin:0 auto;padding:20px 16px 60px">
-    <button class="back-btn" onclick="closeFavourites()">← Back</button>
-    <h2 class="h2" style="margin-bottom:16px">❤️ Favourites</h2>`;
+function addFavMarkers(){
+  favMarkers.forEach(m=>m.remove());favMarkers=[];
+  if(!favGlobe)return;
+  favourites.forEach((f,i)=>{
+    if(!f.lat||!f.lng)return;
+    const el=document.createElement('div');el.className='fav-globe-pin';
+    el.textContent=f.catIcon||'\u{1F4CD}';
+    el.onclick=()=>{
+      const item=document.getElementById('fav-item-'+i);
+      if(item){item.scrollIntoView({behavior:'smooth',block:'center'});item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
+    };
+    const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat([f.lng,f.lat]).addTo(favGlobe);
+    favMarkers.push(m);
+  });
+}
+
+function renderFavList(){
+  const flagsEl=document.getElementById('fav-flags'),listEl=document.getElementById('fav-list');
+  if(!listEl)return;
   if(!favourites.length){
-    h+=`<p style="color:#5a5548;font-size:14px;text-align:center;margin-top:40px">No favourites yet. Tap ♡ on any result to save it here.</p>`;
-  } else {
-    // Group favourites by location
-    const groups={};
-    favourites.forEach((f,i)=>{
-      const loc=extractLocation(f.address);
-      if(!groups[loc])groups[loc]=[];
-      groups[loc].push({...f,originalIndex:i});
-    });
+    if(flagsEl)flagsEl.innerHTML='';
+    listEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px"><p style="color:#5a5548;font-size:14px;text-align:center">No favourites yet.<br>Tap \u2661 on any result to save it here.</p></div>';
+    return;
+  }
+  const groups=groupFavsByLocation();
+  const ccs=Object.keys(groups).sort((a,b)=>a==='__'?1:b==='__'?-1:groups[a].country.localeCompare(groups[b].country));
 
-    // Sort groups alphabetically
-    const sortedLocs=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+  if(flagsEl)flagsEl.innerHTML=ccs.map(cc=>`<button class="flag-tab" onclick="scrollToCountry('${cc}')" title="${esc(groups[cc].country)}">${groups[cc].flag}</button>`).join('');
 
-    h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
-    sortedLocs.forEach(loc=>{
-      const items=groups[loc];
-      const isExpanded=favExpandedGroups[loc]!==false; // Default to expanded
-      const groupId='fav-group-'+loc.replace(/[^a-zA-Z0-9]/g,'');
-      h+=`<div class="card" style="padding:0;overflow:hidden">
-        <div onclick="toggleFavGroup('${esc(loc)}')" style="padding:14px;cursor:pointer;background:#1a1917">
-          <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#d4a853">📍 ${esc(loc)}</div>
-        </div>
-        <div id="${groupId}" style="display:${isExpanded?'block':'none'}">`;
-      items.forEach((f,j)=>{
-        const i=f.originalIndex;
-        const bc=f.rating>=8?"badge-high":f.rating>=6?"badge-mid":"badge-low";
-        h+=`<div style="padding:12px 14px;border-top:1px solid #2a2826;${j>0?'':''}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="min-width:0;flex:1">
-              <div class="card-name" style="font-size:14px">${esc(f.catIcon||'📍')} ${esc(f.name)}</div>
-              <div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d;font-size:11px" onclick="openFavMap(${i})">${esc(f.address)}</div>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-              ${f.price_level?`<span style="font-size:11px;color:#8a8478">${esc(f.price_level)}</span>`:""}
-              <span class="badge ${bc}" style="font-size:11px;padding:2px 6px">${f.rating}/10</span>
-              <button class="fav-remove" onclick="removeFavourite(${i})" title="Remove" style="font-size:16px">♥</button>
-            </div>
-          </div>
-          <div id="fav-ph-${i}" class="photo-strip" style="margin:8px -14px 0;padding:0 14px"><div class="photo-shimmer" style="width:120px;height:80px"></div><div class="photo-shimmer" style="width:140px;height:80px"></div></div>
-          ${f.summary?`<p style="font-size:12px;color:#a09a8e;margin-top:8px;line-height:1.4">${esc(f.summary)}</p>`:''}
+  let h='';
+  ccs.forEach(cc=>{
+    const g=groups[cc];
+    h+=`<div id="fav-country-${cc}" class="fav-country-section"><div class="fav-country-header">${g.flag} ${esc(g.country)}</div>`;
+    Object.keys(g.cities).sort().forEach(city=>{
+      h+=`<div class="fav-city-header">${esc(city)}</div>`;
+      g.cities[city].forEach(f=>{
+        const bc=f.rating>=8?'badge-high':f.rating>=6?'badge-mid':'badge-low';
+        h+=`<div class="fav-item" id="fav-item-${f._idx}" onclick="flyToFav(${f._idx})">
+          <span class="fav-item-icon">${f.catIcon||'\u{1F4CD}'}</span>
+          <div class="fav-item-body"><div class="fav-item-name">${esc(f.name)}</div><div class="fav-item-addr">${esc(f.address)}</div></div>
+          <span class="badge ${bc}" style="font-size:11px;flex-shrink:0">${f.rating}/10</span>
+          <button class="fav-remove" onclick="event.stopPropagation();removeFavourite(${f._idx})" title="Remove">\u2715</button>
         </div>`;
       });
-      h+=`</div></div>`;
     });
-    h+=`</div>`;
-  }
-  h+=`</div></div>`;
-  app.innerHTML=h;
-
-  // Fetch fresh photos for each favourite
-  if(favourites.length&&GOOGLE_KEY&&!GOOGLE_KEY.includes("PASTE")){
-    loadMaps(GOOGLE_KEY).then(()=>{
-      favourites.forEach((f,i)=>{
-        getPhotosAndGeometry(f.name,f.address).then(result=>{
-          const el=document.getElementById('fav-ph-'+i);
-          if(!el)return;
-          if(!result.photos.length){el.style.display='none';return;}
-          favPhotos[i]=result.photos;
-          el.innerHTML=result.photos.map((u,j)=>`<img src="${u}" alt="photo" loading="lazy" style="height:80px;min-width:120px" onclick="openFavLightbox(${i},${j})">`).join('');
-        }).catch(()=>{
-          const el=document.getElementById('fav-ph-'+i);if(el)el.style.display='none';
-        });
-      });
-    });
-  }
+    h+='</div>';
+  });
+  listEl.innerHTML=h;
 }
 
-function toggleFavGroup(loc){
-  favExpandedGroups[loc]=favExpandedGroups[loc]===false?true:false;
-  renderFavourites();
+function flyToFav(idx){
+  const f=favourites[idx];if(!f?.lat||!f?.lng||!favGlobe)return;
+  favGlobe.flyTo({center:[f.lng,f.lat],zoom:13,duration:2000,essential:true});
+  const item=document.getElementById('fav-item-'+idx);
+  if(item){item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
 }
 
-function closeFavourites(){favPhotos={};S.screen="welcome";S.cat=null;render();}
+function scrollToCountry(cc){
+  const el=document.getElementById('fav-country-'+cc);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  const groups=groupFavsByLocation();const g=groups[cc];if(!g)return;
+  const first=Object.values(g.cities)[0]?.[0];
+  if(first?.lat&&first?.lng&&favGlobe)favGlobe.flyTo({center:[first.lng,first.lat],zoom:5,duration:2000});
+}
+
+function closeFavourites(){
+  favEnriching=false;
+  if(favGlobe){favGlobe.remove();favGlobe=null;}
+  favMarkers=[];favPhotos={};S.screen="welcome";S.cat=null;render();
+}
 function openFavMap(i){const f=favourites[i];if(f)showMapPopup(f.name,f.address,f.lat||null,f.lng||null);}
-let favPhotos={};
 function openFavLightbox(card,idx){
-  // Temporarily put fav photos into cardPhotos so the existing lightbox works
   cardPhotos[`fav_${card}`]=favPhotos[card];
   lbCard=`fav_${card}`;lbIdx=idx;renderLightbox();
 }
