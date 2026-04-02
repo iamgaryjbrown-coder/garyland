@@ -1297,8 +1297,8 @@ function initFavGlobe(lat,lng){
     container:'fav-globe',
     style:{
       version:8,
-      sources:{carto:{type:'raster',tiles:['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],tileSize:256,attribution:'\u00a9 CartoDB \u00a9 OSM'}},
-      layers:[{id:'carto',type:'raster',source:'carto'}]
+      sources:{satellite:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:18,attribution:'\u00a9 Esri'}},
+      layers:[{id:'satellite',type:'raster',source:'satellite'}]
     },
     center:[lng,lat],
     zoom:hasMultiple?2:favourites.length===1?8:4,
@@ -1308,7 +1308,7 @@ function initFavGlobe(lat,lng){
   favGlobe.on('load',()=>{
     try{
       if(favGlobe.setProjection)favGlobe.setProjection({type:'globe'});
-      if(favGlobe.setFog)favGlobe.setFog({color:'rgb(0,0,0)','high-color':'rgb(0,0,0)','space-color':'rgb(5,5,15)','star-intensity':0.8,'horizon-blend':0.01});
+      if(favGlobe.setFog)favGlobe.setFog({color:'rgba(80,140,200,0.08)','high-color':'rgba(40,80,160,0.3)','space-color':'rgb(5,5,15)','star-intensity':0.6,'horizon-blend':0.04});
     }catch(e){}
     if(S.userLat&&S.userLng){
       const dot=document.createElement('div');dot.className='fav-loc-dot';
