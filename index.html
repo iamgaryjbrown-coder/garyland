@@ -1315,24 +1315,38 @@ function initFavGlobe(lat,lng){
       const el=document.createElement('div');el.className='fav-globe-pin';
       el.textContent=d.catIcon||'\u{1F4CD}';
       el.onclick=()=>{
+        // Fly globe in close to this pin
+        if(favGlobe)favGlobe.pointOfView({lat:d.lat,lng:d.lng,altitude:0.12},1500);
         const item=document.getElementById('fav-item-'+d.idx);
         if(item){item.scrollIntoView({behavior:'smooth',block:'center'});item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
       };
       return el;
     })
-    .htmlLat('lat').htmlLng('lng').htmlAltitude(0.02)
+    .htmlLat('lat').htmlLng('lng').htmlAltitude(0.01)
     .pointOfView({lat,lng,altitude:2.5},0)
     (container);
 
-  // Current location pulsing ring
-  if(S.userLat&&S.userLng){
-    favGlobe.ringsData([{lat:S.userLat,lng:S.userLng}])
-      .ringColor(()=>'rgba(74,144,217,0.9)')
-      .ringMaxRadius(1.5).ringPropagationSpeed(1).ringRepeatPeriod(2000);
-  }
-  // Fly in after showing full globe
-  const alt=hasMultiple?0.7:favourites.length===1?0.15:1.5;
-  setTimeout(()=>{favGlobe.pointOfView({lat,lng,altitude:alt},2500);},800);
+  // Tame the controls once globe is ready
+  favGlobe.onGlobeReady(()=>{
+    setTimeout(()=>{
+      const c=favGlobe.controls();
+      c.rotateSpeed=0.3;
+      c.zoomSpeed=0.4;
+      c.enableDamping=true;
+      c.dampingFactor=0.12;
+      c.minDistance=120;
+      c.maxDistance=600;
+    },0);
+    // Current location pulsing ring
+    if(S.userLat&&S.userLng){
+      favGlobe.ringsData([{lat:S.userLat,lng:S.userLng}])
+        .ringColor(()=>'rgba(74,144,217,0.9)')
+        .ringMaxRadius(1.5).ringPropagationSpeed(1).ringRepeatPeriod(2000);
+    }
+    // Fly in after showing full globe
+    const alt=hasMultiple?0.7:favourites.length===1?0.15:1.5;
+    setTimeout(()=>{favGlobe.pointOfView({lat,lng,altitude:alt},2500);},800);
+  });
 }
 
 function addFavMarkers(){
