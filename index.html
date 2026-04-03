@@ -1284,7 +1284,26 @@ async function reverseGeoNom(lat,lng){
   }catch(e){return{country:'Unknown',country_code:'',city:'Unknown'};}
 }
 
-async function geocodeAddress(addr){
+async function geocodeAddress(name,addr){
+  // Try Google Places first (most accurate for venues)
+  if(window.google?.maps?.places){
+    try{
+      const result=await new Promise(resolve=>{
+        const svc=new google.maps.places.PlacesService(document.createElement('div'));
+        svc.findPlaceFromQuery({query:name+' '+addr,fields:['geometry']},
+          (results,status)=>resolve(status==='OK'&&results?.[0]?.geometry?.location?{lat:results[0].geometry.location.lat(),lng:results[0].geometry.location.lng()}:null));
+      });
+      if(result)return result;
+    }catch(e){}
+  }
+  // Fallback: Nominatim with name + address
+  try{
+    const q=name+', '+addr;
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,{headers:{'User-Agent':'GaryLand/1.0'}});
+    const d=await r.json();
+    if(d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch(e){}
+  // Fallback: Nominatim with just address
   try{
     const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1`,{headers:{'User-Agent':'GaryLand/1.0'}});
     const d=await r.json();
@@ -1301,7 +1320,7 @@ async function enrichFavGeoProgressive(){
     // Step 1: if no coords OR coords from seed (4 decimal places = likely guessed), geocode the address
     const likelyGuessed=f.lat&&(String(f.lat).split('.')[1]||'').length<=4;
     if(((!f.lat||!f.lng)||likelyGuessed)&&f.address){
-      const coords=await geocodeAddress(f.address);
+      const coords=await geocodeAddress(f.name,f.address);
       if(coords){f.lat=coords.lat;f.lng=coords.lng;changed=true;}
       await new Promise(r=>setTimeout(r,1100));
     }
@@ -1416,7 +1435,8 @@ function initFavGlobe(lat,lng){
           .ringMaxRadius(1.5).ringPropagationSpeed(1).ringRepeatPeriod(2000);
       }
       favGlobe.htmlElementsData(pins);
-      enrichFavGeoProgressive();
+      // Load Google Maps for accurate geocoding, then enrich
+      loadMaps(GOOGLE_KEY).then(()=>enrichFavGeoProgressive()).catch(()=>enrichFavGeoProgressive());
     },3500);
   });
 }
