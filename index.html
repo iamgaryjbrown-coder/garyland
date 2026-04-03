@@ -1486,6 +1486,7 @@ function renderFavList(){
             <p class="card-summary">${esc(f.summary||'')}</p>
             ${f.highlights?.length?`<div class="flex-wrap-tags">${f.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
             <div style="font-size:11px;color:#5a5548;margin-top:8px">Saved ${f.dateAdded||''}</div>
+            <button class="btn" style="width:100%;margin-top:12px" onclick="event.stopPropagation();openFavChat(${i})">💬 Tell me more</button>
           </div>
         </div>`;
       });
@@ -1687,6 +1688,13 @@ async function linkDevice(){
     renderFavList();if(favGlobe)addFavMarkers();
     document.getElementById('sync-status').textContent='';
   }catch(e){document.getElementById('sync-status').textContent='Connection failed';}
+}
+
+function openFavChat(idx){
+  const f=favourites[idx];if(!f)return;
+  S.chatPlace={name:f.name,address:f.address||'',summary:f.summary||''};
+  S.chatMsgs=[];S.chatLoading=false;
+  renderChat();
 }
 
 function closeFavourites(){
