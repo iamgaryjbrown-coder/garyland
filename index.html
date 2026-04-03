@@ -1594,7 +1594,7 @@ function updateFavNavButtons(f){
   const nav=document.getElementById('fav-nav-buttons');if(!nav)return;
   const enc=encodeURIComponent(f.name+', '+f.address);
   const ll=f.lat&&f.lng?`${f.lat},${f.lng}`:'';
-  nav.innerHTML=`<a href="https://maps.apple.com/?daddr=${ll||enc}">\u{1F5FA}\u{FE0F} Apple</a><a href="https://www.google.com/maps/dir/?api=1&destination=${enc}">\u{1F4CD} Google</a><a href="https://waze.com/ul?ll=${ll}&q=${enc}&navigate=yes">\u{1F697} Waze</a>`;
+  nav.innerHTML=`<a href="https://www.google.com/maps/dir/?api=1&destination=${enc}">\u{1F4CD} Google Maps</a><a href="https://waze.com/ul?ll=${ll}&q=${enc}&navigate=yes">\u{1F697} Waze</a>`;
   nav.style.display='flex';
 }
 
@@ -2002,7 +2002,7 @@ function renderBenchList(){
         h+=`<div class="card" id="bench-item-${i}" onclick="flyToBench(${i})" style="margin:8px 10px;cursor:pointer">
           <div style="display:flex;justify-content:flex-end;padding:8px 10px 0"><button class="fav-remove" onclick="event.stopPropagation();removeBench(${i})" title="Remove">\u2715</button></div>
           <div class="photo-strip">${b.photos.map((p,j)=>`<img src="${p}" alt="bench" loading="lazy" style="height:150px" onclick="event.stopPropagation();openBenchLightbox(${i},${j})">`).join('')}</div>
-          ${b.caption?`<div class="card-body"><p class="card-summary">${esc(b.caption)}</p><div style="font-size:11px;color:#5a5548;margin-top:6px">${b.dateAdded||''}</div></div>`:''}
+          <div class="card-body">${b.lat?`<span style="cursor:pointer;font-size:18px;float:left;margin-right:8px;margin-top:2px" onclick="event.stopPropagation();flyToBench(${i})">\u{1F4CD}</span>`:''}<p class="card-summary" style="display:inline">${esc(b.caption||'')}</p><div style="font-size:11px;color:#5a5548;margin-top:6px;clear:both">${b.dateAdded||''}</div></div>
         </div>`;
       });
     });
@@ -2024,7 +2024,7 @@ function highlightBenchItem(idx){
 function updateBenchNavButtons(b){
   const nav=document.getElementById('bench-nav-buttons');if(!nav)return;
   const ll=b.lat&&b.lng?`${b.lat},${b.lng}`:'';
-  nav.innerHTML=`<a href="https://maps.apple.com/?ll=${ll}">\u{1F5FA}\u{FE0F} Apple</a><a href="https://www.google.com/maps/@${ll},17z">\u{1F4CD} Google</a>`;
+  nav.innerHTML=`<a href="https://www.google.com/maps/dir/?api=1&destination=${ll}">\u{1F4CD} Google Maps</a><a href="https://waze.com/ul?ll=${ll}&navigate=yes">\u{1F697} Waze</a>`;
   nav.style.display='flex';
 }
 
