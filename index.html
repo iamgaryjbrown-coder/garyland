@@ -1284,16 +1284,33 @@ async function reverseGeoNom(lat,lng){
   }catch(e){return{country:'Unknown',country_code:'',city:'Unknown'};}
 }
 
+async function geocodeAddress(addr){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1`,{headers:{'User-Agent':'GaryLand/1.0'}});
+    const d=await r.json();
+    if(d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch(e){}
+  return null;
+}
+
 async function enrichFavGeoProgressive(){
   favEnriching=true;
   let changed=false;
   for(const f of favourites){
     if(!favEnriching)break;
-    if(f.country_code||!f.lat||!f.lng)continue;
-    const info=await reverseGeoNom(f.lat,f.lng);
-    Object.assign(f,info);changed=true;
-    if(S.screen==='favourites')renderFavList();
-    await new Promise(r=>setTimeout(r,1100));
+    // Step 1: if no coords, geocode the address
+    if((!f.lat||!f.lng)&&f.address){
+      const coords=await geocodeAddress(f.address);
+      if(coords){f.lat=coords.lat;f.lng=coords.lng;changed=true;}
+      await new Promise(r=>setTimeout(r,1100));
+    }
+    // Step 2: if no country, reverse-geocode
+    if(!f.country_code&&f.lat&&f.lng){
+      const info=await reverseGeoNom(f.lat,f.lng);
+      Object.assign(f,info);changed=true;
+      if(S.screen==='favourites'){renderFavList();if(favGlobe)addFavMarkers();}
+      await new Promise(r=>setTimeout(r,1100));
+    }
   }
   if(changed)saveFavourites(favourites);
   favEnriching=false;
