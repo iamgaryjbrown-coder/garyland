@@ -847,7 +847,7 @@ function renderWelcome(){
   // ── Screen 1: Opening/location screen — always shown on launch ──
   if(S.screen==='location'||!hasLoc){
     app.innerHTML=`<div class="welcome-content">
-      <video autoplay loop muted playsinline style="width:260px;height:78px;margin-bottom:16px;object-fit:contain" src="garyland-title.mp4"></video>
+      <video autoplay loop muted playsinline style="width:260px;height:auto;min-height:140px;margin-bottom:16px" src="garyland-title.mp4"></video>
       <p style="font-size:9px;color:#333;margin-bottom:20px">v19</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="useCurrentLocation()">📍 Use current location</button>
@@ -861,7 +861,7 @@ function renderWelcome(){
   // ── Screen 2a: Sun sub-menu (Fun in the Sun!) ──
   if(S.cat==='sun'){
     app.innerHTML=`<div class="welcome-content">
-      <video autoplay loop muted playsinline style="width:200px;height:60px;margin-bottom:12px;object-fit:contain" src="garyland-title.mp4"></video>
+      <video autoplay loop muted playsinline style="width:200px;height:auto;min-height:108px;margin-bottom:12px" src="garyland-title.mp4"></video>
       <p style="font-size:16px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;margin-bottom:4px">☀️ Fun in the Sun!</p>
       <p style="font-size:13px;color:#6a645a;margin-bottom:20px;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
@@ -903,7 +903,7 @@ function renderWelcome(){
 
   // ── Main menu (has location) ──
   app.innerHTML=`<div class="welcome-content">
-    <video autoplay loop muted playsinline style="width:200px;height:60px;margin-bottom:8px;object-fit:contain" src="garyland-title.mp4"></video>
+    <video autoplay loop muted playsinline style="width:200px;height:auto;min-height:108px;margin-bottom:8px" src="garyland-title.mp4"></video>
     <p style="font-size:9px;color:#333;margin-bottom:6px">v19</p>
     <div style="margin-bottom:20px;text-align:center">
       <p style="font-size:11px;color:#5a5548;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px">Searching</p>
@@ -923,7 +923,7 @@ function renderWelcome(){
 function renderLoading(){
   const msgs=LOAD_MSGS[getMsgType(S.query?.cat?.id)]||LOAD_MSGS.pub;
   app.innerHTML=`<div class="loading-screen">
-    <video autoplay loop muted playsinline style="width:200px;height:60px;margin-bottom:12px;object-fit:contain" src="garyland-title.mp4"></video>
+    <video autoplay loop muted playsinline style="width:200px;height:auto;min-height:108px;margin-bottom:12px" src="garyland-title.mp4"></video>
     ${BEETLE}
     <p style="margin-top:20px;font-size:15px;color:${S.error?"#e57373":"#d4a853"};font-weight:600;min-height:24px;max-width:320px;padding:0 16px" id="lm">${S.error||msgs[S.loadMsgIdx%msgs.length]}</p>
     ${S.error?'<button class="btn active" style="margin-top:16px" onclick="goBack()">← Go Back</button>':""}</div>`;
