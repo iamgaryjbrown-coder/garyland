@@ -1504,7 +1504,7 @@ function highlightFavItem(idx){
   if(listArea){
     const listTop=listArea.getBoundingClientRect().top;
     const itemTop=item.getBoundingClientRect().top;
-    listArea.scrollTop+=itemTop-listTop;
+    listArea.scrollTop+=itemTop-listTop-8;
   }
   item.classList.add('fav-item-flash');
   setTimeout(()=>item.classList.remove('fav-item-flash'),2000);
