@@ -1320,7 +1320,7 @@ function initFavGlobe(lat,lng){
       el.style.pointerEvents='auto';el.style.cursor='pointer';
       el.style.transition='opacity 250ms';
       el.onclick=()=>{
-        if(favGlobe)favGlobe.pointOfView({lat:d.lat,lng:d.lng,altitude:0.0012},2000);
+        if(favGlobe)favGlobe.pointOfView({lat:d.lat,lng:d.lng,altitude:0.002},2000);
         setTimeout(()=>{
           const item=document.getElementById('fav-item-'+d.idx);
           if(item){
@@ -1338,22 +1338,23 @@ function initFavGlobe(lat,lng){
 
   // Configure once globe scene is ready
   favGlobe.onGlobeReady(()=>{
-    // Tame controls — apply multiple times to survive any internal resets
+    // Keep controls tamed — globe.gl resets them after pointOfView calls
     const applyControls=()=>{
       try{
         const c=favGlobe.controls();
         if(!c)return;
         c.rotateSpeed=0.3;
-        c.zoomSpeed=0.4;
+        c.zoomSpeed=0.6;
         c.enableDamping=true;
         c.dampingFactor=0.12;
-        c.minDistance=100.05;
+        c.minDistance=100.02;
         c.maxDistance=600;
+        c.enableZoom=true;
       }catch(e){}
     };
+    // Apply now and keep re-applying to survive internal resets
     applyControls();
-    setTimeout(applyControls,100);
-    setTimeout(applyControls,500);
+    favGlobe._controlsInterval=setInterval(applyControls,500);
 
     // Current location pulsing ring
     if(S.userLat&&S.userLng){
@@ -1410,7 +1411,7 @@ function renderFavList(){
 
 function flyToFav(idx){
   const f=favourites[idx];if(!f?.lat||!f?.lng||!favGlobe)return;
-  favGlobe.pointOfView({lat:f.lat,lng:f.lng,altitude:0.0012},2000);
+  favGlobe.pointOfView({lat:f.lat,lng:f.lng,altitude:0.002},2000);
   const item=document.getElementById('fav-item-'+idx);
   if(item){item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),2000);}
 }
@@ -1425,6 +1426,7 @@ function scrollToCountry(cc){
 
 function closeFavourites(){
   favEnriching=false;
+  if(favGlobe&&favGlobe._controlsInterval)clearInterval(favGlobe._controlsInterval);
   const gc=document.getElementById('fav-globe');if(gc)gc.innerHTML='';
   favGlobe=null;favMarkers=[];favPhotos={};S.screen="welcome";S.cat=null;render();
 }
