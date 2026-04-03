@@ -1437,29 +1437,27 @@ function addAllLeafletPins(activeIdx){
 }
 function showFavStreetView(idx){
   const f=favourites[idx];if(!f?.lat||!f?.lng)return;
-  // Globe fly-in (medium zoom)
+
+  // If Leaflet already showing — respond instantly, no globe fly
+  if(favLeafletMap){
+    const wrap=document.getElementById('fav-leaflet');
+    addAllLeafletPins(idx);
+    const cur=favLeafletMap.getCenter();
+    const dist=Math.sqrt(Math.pow(cur.lat-f.lat,2)+Math.pow(cur.lng-f.lng,2));
+    if(dist<0.5){
+      favLeafletMap.flyTo([f.lat,f.lng],17,{duration:1});
+    } else {
+      favLeafletMap.flyTo([f.lat,f.lng],17,{duration:2});
+    }
+    highlightFavItem(idx);
+    return;
+  }
+
+  // First time — globe fly-in then crossfade to Leaflet
   if(favGlobe)favGlobe.pointOfView({lat:f.lat,lng:f.lng,altitude:0.05},1500);
-  // After fly-in, crossfade to Leaflet
   setTimeout(()=>{
     loadLeaflet().then(()=>{
       const wrap=document.getElementById('fav-leaflet');if(!wrap)return;
-      // If Leaflet already showing, move to new location
-      if(favLeafletMap){
-        addAllLeafletPins(idx);
-        const cur=favLeafletMap.getCenter();
-        const dist=Math.sqrt(Math.pow(cur.lat-f.lat,2)+Math.pow(cur.lng-f.lng,2));
-        if(dist<0.5){
-          favLeafletMap.flyTo([f.lat,f.lng],17,{duration:1.2});
-        } else {
-          wrap.style.opacity='0';
-          setTimeout(()=>{
-            favLeafletMap.setView([f.lat,f.lng],17,{animate:false});
-            wrap.style.opacity='1';
-          },300);
-        }
-        highlightFavItem(idx);
-        return;
-      }
       favLeafletMap=L.map(wrap,{zoomControl:false,attributionControl:false}).setView([f.lat,f.lng],17);
       L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom:21,subdomains:['mt0','mt1','mt2','mt3']}).addTo(favLeafletMap);
       addAllLeafletPins(idx);
