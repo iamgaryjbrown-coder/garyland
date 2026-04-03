@@ -247,26 +247,53 @@ function saveSpudChat(msgs){try{localStorage.setItem('garyland_spud_chat',JSON.s
 let spudChatHistory=loadSpudChat();
 let spudSessionStart=0;
 
-function loadFavourites(){try{return JSON.parse(localStorage.getItem('garyland_favourites'))||[];}catch(e){return[];}}
-function saveFavourites(favs){try{localStorage.setItem('garyland_favourites',JSON.stringify(favs));}catch(e){}}
+// ── Favourites: localStorage + Cloudflare KV sync ──
+function getToken(){
+  let t=localStorage.getItem('garyland_token');
+  if(!t){t=crypto.randomUUID();localStorage.setItem('garyland_token',t);}
+  return t;
+}
+function loadFavouritesLocal(){try{return JSON.parse(localStorage.getItem('garyland_favourites'))||[];}catch(e){return[];}}
+function saveFavouritesLocal(favs){try{localStorage.setItem('garyland_favourites',JSON.stringify(favs));}catch(e){}}
+function loadFavourites(){return loadFavouritesLocal();}
+function saveFavourites(favs){
+  saveFavouritesLocal(favs);
+  // Fire-and-forget push to KV
+  const t=getToken();
+  fetch(WORKER_URL+'/favourites',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t,favourites:favs})}).catch(()=>{});
+}
 let favourites=loadFavourites();
-// Merge backed-up favourites: add missing ones, enrich existing with geo data
-(function mergeSeedFavs(){
-  const seed=[{"name":"La Revuelta El Médano","address":"Av. José Miguel Galván Bello, 23, 38612 El Médano, Santa Cruz de Tenerife","rating":10,"summary":"4.8 stars, 98 reviews. Wine, gastro food and reportedly vinyl records — a proper little gem in El Médano. Open daily, morning and evening.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0453,"lng":-16.5364,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"Marisquería Agua y Sal","address":"C. Callao Hondo, 22, 38588 San Miguel de Tajao, Santa Cruz de Tenerife","rating":9,"summary":"4.5 stars, 6629 reviews — seriously well reviewed seafood restaurant. In San Miguel de Tajao, a tiny fishing village. Open Wed–Sun from 12:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0867,"lng":-16.4172,"searchLocation":"Tenerife","country":"Spain","country_code":"ES","city":"San Miguel de Tajao"},{"name":"La Mordidita","address":"Pl. de Ireneo Gonzalez, 10, 38002 Santa Cruz de Tenerife","rating":9,"summary":"4.5 stars, 455 reviews. Great little spot for lunch or dinner. Open Tue–Sat 1:30pm–10:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4695,"lng":-16.2538,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Kebab Alhambra Santa Cruz","address":"Pl. San Juan Bautista, 4, 38005 Santa Cruz de Tenerife","rating":9,"summary":"4.6 stars, 352 reviews. Late night kebab spot open until midnight every day.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4682,"lng":-16.2546,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Cafetería Olisero","address":"C. Heliodoro Rodríguez López, 22, Santa Cruz de Tenerife","rating":9,"summary":"Opens 6:30am weekdays, 7:30am Saturday. Reliable local cafetería with 232 reviews.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0448,"lng":-16.536,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"La Boqueria Taberna El Médano","address":"C. Iriarte, 14, 38612 El Médano, Santa Cruz de Tenerife","rating":9,"summary":"4.7 stars, 629 reviews. Excellent taberna in El Médano. Open Thursday evenings from 7pm. Closed Monday and Tuesday.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.044,"lng":-16.5355,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"CRUDO Bar","address":"Calle Clavel, 9, 38002 Santa Cruz de Tenerife","rating":9,"summary":"Craft cocktail bar with serious soul — coctelería de autor, live music events and a proper late-night vibe. Open until 2am Mon–Thu, 3:30am Fri–Sat.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🍻","dateAdded":"2026-03-26","lat":28.4689,"lng":-16.2519,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Restaurante Veinte 04 Surf Cafe","address":"Calle Hno Pedro, 2, 38612 El Médano, Santa Cruz de Tenerife","rating":8,"summary":"4 stars, 1657 reviews. Surf cafe right in El Médano, opens 9am every day. Great atmosphere, outdoor seating.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.0448,"lng":-16.5368,"searchLocation":"El Médano","country":"Spain","country_code":"ES","city":"El Médano"},{"name":"Restaurante Manglar","address":"Plaza de España Pabellón 2, 38003 Santa Cruz de Tenerife","rating":8,"summary":"4.1 stars, 378 reviews. Right on Plaza de España — great location by the seafront. Open Tue–Sun from 12:30pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4685,"lng":-16.2485,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Bodegón El Puntero","address":"Calle San Clemente, 13, 38003 Santa Cruz de Tenerife","rating":9,"summary":"A proper Canarian bodegón — bacalao, pulpo and dorada done right, at prices that won't hurt. 4.6 on Google from 605 reviews.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4692,"lng":-16.2501,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Gastrobar Cortxo","address":"Pl. de Ireneo Gonzalez, 5, 38003 Santa Cruz de Tenerife","rating":9,"summary":"4.4 stars, 1026 reviews. Gastrobar on a plaza in central Santa Cruz. Open Tue–Sat 1:30pm–11pm.","price_level":"££","highlights":[],"sun_verdict":"","catIcon":"🥘","dateAdded":"2026-03-26","lat":28.4696,"lng":-16.2537,"searchLocation":"Santa Cruz de Tenerife","country":"Spain","country_code":"ES","city":"Santa Cruz de Tenerife"},{"name":"Etna pizza & burger","address":"Fbg Auriac, Lauzerte","rating":7,"summary":"Pizza and burger spot in Lauzerte.","price_level":"£","highlights":[],"sun_verdict":"","catIcon":"🍕","dateAdded":"2026-04-01","lat":44.255,"lng":1.139,"searchLocation":"Lauzerte","country":"France","country_code":"FR","city":"Lauzerte"}];
-  let changed=false;
-  seed.forEach(s=>{
-    const existing=favourites.find(f=>f.name===s.name);
-    if(existing){
-      // Enrich existing entry with geo data if missing
-      if(!existing.country_code&&s.country_code){Object.assign(existing,{country:s.country,country_code:s.country_code,city:s.city,searchLocation:s.searchLocation});changed=true;}
-      if(existing.catIcon&&/^U000/i.test(existing.catIcon)){existing.catIcon=s.catIcon;changed=true;}
-      if(!existing.lat&&s.lat){existing.lat=s.lat;existing.lng=s.lng;changed=true;}
-    } else {
-      favourites.push(s);changed=true;
+
+// Async KV sync on load — merge server data with local
+(async function syncFavsFromKV(){
+  try{
+    const t=getToken();
+    const r=await fetch(WORKER_URL+'/favourites?token='+encodeURIComponent(t));
+    const d=await r.json();
+    const server=d.favourites||[];
+    if(!server.length&&favourites.length){
+      // Server empty, push local up
+      saveFavourites(favourites);return;
     }
-  });
-  if(changed)saveFavourites(favourites);
+    if(!server.length)return;
+    // Merge: add any server items not in local
+    let changed=false;
+    server.forEach(s=>{
+      if(!favourites.find(f=>f.name===s.name&&f.address===s.address)){
+        favourites.push(s);changed=true;
+      }
+    });
+    // Also add any local items not on server
+    const merged=[...favourites];
+    if(changed){saveFavouritesLocal(favourites);}
+    // Push merged set to server
+    saveFavourites(favourites);
+    // Re-render if favourites screen is showing
+    if(S.screen==='favourites'){renderFavList();if(favGlobe)addFavMarkers();}
+  }catch(e){}
 })();
+// Migrate old catIcons
+(function(){let c=false;favourites.forEach(f=>{if(f.catIcon&&/^U000/i.test(f.catIcon)){f.catIcon='\u{1F4CD}';c=true;}});if(c)saveFavourites(favourites);})();
 
 function isFavourite(name,address){return favourites.some(f=>f.name===name&&f.address===address);}
 function toggleFavourite(i){
@@ -1276,6 +1303,20 @@ function renderFavourites(){
   const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;
   app.innerHTML=`<div class="favs-screen">
     <button class="favs-back-btn" onclick="closeFavourites()">\u2190 Back</button>
+    <button class="favs-back-btn" style="left:auto;right:12px" onclick="showSyncModal()">\u{1F517} Sync</button>
+    <div id="sync-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;padding:20px">
+      <div style="background:#1a1917;border:1px solid #2a2826;border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center">
+        <h3 style="font-family:'Fraunces',serif;color:#d4a853;font-size:18px;margin-bottom:16px">\u{1F517} Sync Devices</h3>
+        <p style="font-size:13px;color:#8a8478;margin-bottom:16px">Share this code with your other device.<br>Valid for 10 minutes.</p>
+        <div id="sync-code" style="font-family:monospace;font-size:32px;letter-spacing:6px;color:#2dd4bf;margin-bottom:20px">------</div>
+        <div style="height:1px;background:#2a2826;margin:16px 0"></div>
+        <p style="font-size:13px;color:#8a8478;margin-bottom:12px">Or enter a code from another device:</p>
+        <input id="sync-input" class="input" maxlength="6" placeholder="Enter code" style="text-align:center;font-size:20px;letter-spacing:4px;text-transform:uppercase">
+        <button class="btn active" style="width:100%;margin-top:12px" onclick="linkDevice()">Link</button>
+        <button class="btn" style="width:100%;margin-top:8px" onclick="closeSyncModal()">Cancel</button>
+        <p id="sync-status" style="font-size:12px;color:#e57373;margin-top:8px;min-height:16px"></p>
+      </div>
+    </div>
     <div class="favs-globe-wrap">
       <div id="fav-globe" style="width:100%;height:100%"></div>
       <div class="favs-leaflet-wrap" id="fav-leaflet"></div>
@@ -1492,6 +1533,38 @@ function showFavGlobe(){
     const alt=hasMultiple?0.7:1.5;
     favGlobe.pointOfView({lat,lng,altitude:alt},1500);
   }
+}
+
+async function showSyncModal(){
+  const modal=document.getElementById('sync-modal');if(!modal)return;
+  modal.style.display='flex';
+  document.getElementById('sync-status').textContent='';
+  document.getElementById('sync-input').value='';
+  // Generate code
+  try{
+    const r=await fetch(WORKER_URL+'/sync/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:getToken()})});
+    const d=await r.json();
+    document.getElementById('sync-code').textContent=d.code||'ERROR';
+  }catch(e){document.getElementById('sync-code').textContent='OFFLINE';}
+}
+function closeSyncModal(){const m=document.getElementById('sync-modal');if(m)m.style.display='none';}
+async function linkDevice(){
+  const code=document.getElementById('sync-input')?.value?.trim();
+  if(!code||code.length<6){document.getElementById('sync-status').textContent='Enter a 6-character code';return;}
+  document.getElementById('sync-status').textContent='Linking...';
+  try{
+    const r=await fetch(WORKER_URL+'/sync/link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+    const d=await r.json();
+    if(d.error){document.getElementById('sync-status').textContent=d.error;return;}
+    // Save new token + pull favourites
+    localStorage.setItem('garyland_token',d.token);
+    const fr=await fetch(WORKER_URL+'/favourites?token='+encodeURIComponent(d.token));
+    const fd=await fr.json();
+    if(fd.favourites?.length){favourites=fd.favourites;saveFavouritesLocal(favourites);}
+    closeSyncModal();
+    renderFavList();if(favGlobe)addFavMarkers();
+    document.getElementById('sync-status').textContent='';
+  }catch(e){document.getElementById('sync-status').textContent='Connection failed';}
 }
 
 function closeFavourites(){

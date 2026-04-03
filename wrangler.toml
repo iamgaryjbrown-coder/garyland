@@ -1,3 +1,7 @@
 name = "garyland-api"
 main = "worker.js"
 compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "FAVS"
+id = "9df9b49b3c34434b9e6b95483aeb458c"
