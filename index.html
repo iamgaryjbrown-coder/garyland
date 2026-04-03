@@ -838,7 +838,7 @@ function render(){
   else if(S.screen==="loading")renderLoading();
   else if(S.screen==="results")renderResults();
   else if(S.screen==="favourites")renderFavourites();
-  // else if(S.screen==="benches")renderBenches(); // And Pause — disabled for rethink
+  else if(S.screen==="benches")renderBenches();
 }
 
 function renderWelcome(){
@@ -914,6 +914,7 @@ function renderWelcome(){
       <button class="btn" onclick="S.cat='sun';S.results=null;S.searching=false;render()">☀️ Fun in the Sun!</button>
       <button class="btn" onclick="pickCat('pub')">🍻 Pub O'Clock!</button>
       <button class="btn" onclick="pickCat('eat')">🥘 Eat Out!</button>
+      <button class="btn" onclick="openBenches()">🪑 And Pause</button>
       <div style="height:6px"></div>
       <button class="btn" onclick="openSpudChat()" style="border-color:#d4a853;color:#d4a853">🪲 Ask Spud</button>
       ${favCount?`<button class="btn" onclick="openFavourites()">❤️ Favourites <span style="font-size:11px;color:#6a645a">(${favCount})</span></button>`:""}
@@ -1714,7 +1715,124 @@ function openFavLightbox(card,idx){
 // ═══════════════════════════════════════
 // And Pause — Benches
 // ═══════════════════════════════════════
-const BENCH_DATA=[{"name": "\u2018At the end of the storm, there\u2019s a golden sky\u2019", "caption": "\u2018At the end of the storm, there\u2019s a golden sky\u2019\n\nA tribute to Ben Tucker 1995 - 2022\n\u2018The most loveable, fun, caring and lively partner, brother, son and friend\u2019", "lat": null, "lng": null, "photos": ["bench_photos/bench_0_0.jpg", "bench_photos/bench_0_1.jpg"], "dateAdded": "2024-01-16"},{"name": "South circular sunshine.", "caption": "South circular sunshine.\nMeditative traffic soundscape \ud83d\udc4c \n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_1_0.jpg", "bench_photos/bench_1_1.jpg", "bench_photos/bench_1_2.jpg", "bench_photos/bench_1_3.jpg"], "dateAdded": "2023-11-17"},{"name": "", "caption": "", "lat": 51.433303613777, "lng": -0.14481782913208, "photos": ["bench_photos/bench_2_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "Watching the cormorants fish, a heron stalk, loads of swans doing swan stuff under scudding clouds a", "caption": "Watching the cormorants fish, a heron stalk, loads of swans doing swan stuff under scudding clouds all with warm summer sun on our backs - Berwick upon Tweed delivering the goods.", "lat": null, "lng": null, "photos": ["bench_photos/bench_4_0.jpg", "bench_photos/bench_4_1.jpg", "bench_photos/bench_4_2.jpg"], "dateAdded": "2023-08-19"},{"name": "Goals \u261d\ud83c\udffc", "caption": "Goals \u261d\ud83c\udffc", "lat": null, "lng": null, "photos": ["bench_photos/bench_5_0.jpg"], "dateAdded": "2023-08-08"},{"name": "", "caption": "", "lat": 36.91653, "lng": 25.98364, "photos": ["bench_photos/bench_8_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": 36.917118083076, "lng": 25.98371910387, "photos": ["bench_photos/bench_9_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": 36.901305676512, "lng": 25.976658611371, "photos": ["bench_photos/bench_10_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": null, "lng": null, "photos": ["bench_photos/bench_11_0.jpg"], "dateAdded": ""},{"name": "", "caption": "", "lat": 51.433303613777, "lng": -0.14481782913208, "photos": ["bench_photos/bench_12_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": 51.5299242, "lng": -0.1348343, "photos": ["bench_photos/bench_13_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": 51.42459165, "lng": -0.23669589, "photos": ["bench_photos/bench_14_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": 55.60759, "lng": -1.71635, "photos": ["bench_photos/bench_15_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "England"},{"name": "", "caption": "", "lat": 51.433303613777, "lng": -0.14481782913208, "photos": ["bench_photos/bench_16_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": null, "lng": null, "photos": ["bench_photos/bench_17_0.jpg"], "dateAdded": ""},{"name": "", "caption": "", "lat": 36.943972925777, "lng": 24.751658156458, "photos": ["bench_photos/bench_18_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": 36.8333, "lng": 25.8667, "photos": ["bench_photos/bench_19_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": 36.826723895009, "lng": 25.863759500001, "photos": ["bench_photos/bench_20_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": 36.8667, "lng": 25.5167, "photos": ["bench_photos/bench_21_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": 36.93375, "lng": 25.60211, "photos": ["bench_photos/bench_22_0.jpg"], "dateAdded": "", "country": "\u0395\u03bb\u03bb\u03ac\u03c2", "country_code": "GR", "city": "\u03a0\u03b5\u03c1\u03b9\u03c6\u03ad\u03c1\u03b5\u03b9\u03b1 \u039d\u03bf\u03c4\u03af\u03bf\u03c5 \u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5"},{"name": "", "caption": "", "lat": 52.041019435666, "lng": -1.3914533575882, "photos": ["bench_photos/bench_23_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Cherwell"},{"name": "As ever, this place allows me to see the wood from the trees.", "caption": "As ever, this place allows me to see the wood from the trees.\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_24_0.jpg", "bench_photos/bench_24_1.jpg", "bench_photos/bench_24_2.jpg"], "dateAdded": "2022-03-05"},{"name": "", "caption": "", "lat": 51.433303613777, "lng": -0.14481782913208, "photos": ["bench_photos/bench_25_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": 51.420315056709, "lng": -0.18345898802939, "photos": ["bench_photos/bench_26_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "First rays of morning Sun. Thawing. Transfer of energy. Change of state. Don\u2019t mind if I do.", "caption": "First rays of morning Sun. Thawing. Transfer of energy. Change of state. Don\u2019t mind if I do.\n\n(In fond memory of Allen Webb - loving son, husband, father and grandfather, who enjoyed many happy hours here with his family)", "lat": null, "lng": null, "photos": ["bench_photos/bench_27_0.jpg", "bench_photos/bench_27_1.jpg"], "dateAdded": "2022-01-13"},{"name": "A tranquil high tide at Barn Elms looking towards the impressive new riverside stand at Fulham Footb", "caption": "A tranquil high tide at Barn Elms looking towards the impressive new riverside stand at Fulham Football Club. \n.\nIn memory of Gavin & Margo Ewart - \u2018The Lover Writes a One word Poem - You!\u2019\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_28_0.jpg", "bench_photos/bench_28_1.jpg"], "dateAdded": "2021-11-07"},{"name": "Got to be one of the most original benches out there\u2026 iridescent shimmery purple and blue. Located i", "caption": "Got to be one of the most original benches out there\u2026 iridescent shimmery purple and blue. Located in an awe inspiring spot looking across the River Colne in Essex with this heartfelt dedication\u2026. IN MEMORY OF OUR MATE DAVE GARDINER (FAT BLOKE)\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_29_0.jpg", "bench_photos/bench_29_1.jpg", "bench_photos/bench_29_2.jpg"], "dateAdded": "2021-11-04"},{"name": "", "caption": "", "lat": 49.256657755206, "lng": -2.2293264246096, "photos": ["bench_photos/bench_30_0.jpg"], "dateAdded": "", "country": "Jersey", "country_code": "JE", "city": "St Ouen"},{"name": "", "caption": "", "lat": 51.4333, "lng": -0.216667, "photos": ["bench_photos/bench_31_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": 34.1, "lng": -118.33333333333, "photos": ["bench_photos/bench_32_0.jpg"], "dateAdded": "", "country": "United States", "country_code": "US", "city": "Los Angeles"},{"name": "If it wasn\u2019t for places like this...", "caption": "If it wasn\u2019t for places like this...\n.\n\u201cThanks for the memory Joan, fondest love Dink Dec 83\u201d\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_33_0.jpg", "bench_photos/bench_33_1.jpg", "bench_photos/bench_33_2.jpg"], "dateAdded": "2019-05-19"},{"name": "", "caption": "", "lat": 36.01514, "lng": -5.60313, "photos": ["bench_photos/bench_34_0.jpg"], "dateAdded": "", "country": "Espa\u00f1a", "country_code": "ES", "city": "Tarifa"},{"name": "", "caption": "", "lat": 51.38734, "lng": -0.33327, "photos": ["bench_photos/bench_35_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Elmbridge"},{"name": "Came across this slightly overgrown treasure today when I went off the track and wading into a tranq", "caption": "Came across this slightly overgrown treasure today when I went off the track and wading into a tranquil area of the common dominated by silver birch and holly. Beautiful.\n.\n\u2018In dearest memory of Laurie Roberts who, with Wyn, enjoyed the common over many years\u2019\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_36_0.jpg", "bench_photos/bench_36_1.jpg", "bench_photos/bench_36_2.jpg", "bench_photos/bench_36_3.jpg", "bench_photos/bench_36_4.jpg"], "dateAdded": "2019-01-12"},{"name": "Love how this common has benches sprinkled throughout it\u2019s deep and forested edges. Inspired \ud83d\ude4c\ud83c\udffb", "caption": "Love how this common has benches sprinkled throughout it\u2019s deep and forested edges. Inspired \ud83d\ude4c\ud83c\udffb\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_37_0.jpg", "bench_photos/bench_37_1.jpg", "bench_photos/bench_37_2.jpg"], "dateAdded": "2019-01-01"},{"name": "", "caption": "", "lat": 51.948, "lng": -5.181, "photos": ["bench_photos/bench_38_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "St Davids"},{"name": "", "caption": "", "lat": 51.433333333333, "lng": -0.14472222222222, "photos": ["bench_photos/bench_39_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": 51.4578, "lng": -0.1494, "photos": ["bench_photos/bench_40_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "", "caption": "", "lat": 51.437839854, "lng": -0.23172393200001, "photos": ["bench_photos/bench_41_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"},{"name": "Came across a beautiful and unusual leafed tree today called Ginkgo Bilobo and discovered that it is", "caption": "Came across a beautiful and unusual leafed tree today called Ginkgo Bilobo and discovered that it is the world\u2019s oldest plant species (as far as we know) at 270 million years old. How amazing is that! What a beautiful place to sit\ud83d\ude4f\ud83c\udffb\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_42_0.jpg", "bench_photos/bench_42_1.jpg", "bench_photos/bench_42_2.jpg", "bench_photos/bench_42_3.jpg", "bench_photos/bench_42_4.jpg"], "dateAdded": "2018-11-25"},{"name": "Secret Library Garden", "caption": "Secret Library Garden\nThe most tranquil space in central Copenhagen, probably! ... and yes, that\u2019s a very calm and friendly heron!\n.", "lat": null, "lng": null, "photos": ["bench_photos/bench_43_0.jpg", "bench_photos/bench_43_1.jpg", "bench_photos/bench_43_2.jpg"], "dateAdded": "2018-11-21"},{"name": "", "caption": "", "lat": 54.979, "lng": -1.623, "photos": ["bench_photos/bench_44_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Newcastle upon Tyne"},{"name": "", "caption": "", "lat": 57.680249149034, "lng": -4.0389994997569, "photos": ["bench_photos/bench_45_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Alba / Scotland"},{"name": "", "caption": "", "lat": 57.680249149034, "lng": -4.0389994997569, "photos": ["bench_photos/bench_46_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Alba / Scotland"},{"name": "", "caption": "", "lat": 57.68121, "lng": -4.03528, "photos": ["bench_photos/bench_47_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Alba / Scotland"},{"name": "", "caption": "", "lat": 43.0431, "lng": 16.0931, "photos": ["bench_photos/bench_48_0.jpg"], "dateAdded": "", "country": "Hrvatska", "country_code": "HR", "city": "Grad Komi\u017ea"},{"name": "", "caption": "", "lat": 52.0167, "lng": -4.83333, "photos": ["bench_photos/bench_49_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Cymru / Wales"},{"name": "", "caption": "", "lat": 51.4395707, "lng": -0.2051936, "photos": ["bench_photos/bench_50_0.jpg"], "dateAdded": "", "country": "United Kingdom", "country_code": "GB", "city": "Greater London"}];
+function loadBenchesLocal(){try{return JSON.parse(localStorage.getItem('garyland_benches'))||[];}catch(e){return[];}}
+function saveBenchesLocal(b){try{localStorage.setItem('garyland_benches',JSON.stringify(b));}catch(e){}}
+function saveBenches(b){saveBenchesLocal(b);const t=getToken();fetch(WORKER_URL+'/benches',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t,data:b})}).catch(()=>{});}
+let benches=loadBenchesLocal();
+
+// EXIF GPS reader (lightweight, inline)
+function readExifGps(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=function(e){
+      const view=new DataView(e.target.result);
+      if(view.getUint16(0)!==0xFFD8){resolve({});return;}
+      let offset=2;
+      while(offset<view.byteLength){
+        if(view.getUint16(offset)===0xFFE1){
+          const exif=parseExif(view,offset+4);
+          resolve(exif);return;
+        }
+        offset+=2+view.getUint16(offset+2);
+      }
+      resolve({});
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+function parseExif(view,start){
+  const le=view.getUint16(start+6)===0x4949;
+  const g=n=>le?view.getUint16(n,true):view.getUint16(n);
+  const gl=n=>le?view.getUint32(n,true):view.getUint32(n);
+  const tiffStart=start+6;
+  const ifdOff=tiffStart+gl(tiffStart+4);
+  let gpsOff=0,dateStr='';
+  const cnt=g(ifdOff);
+  for(let i=0;i<cnt;i++){
+    const entry=ifdOff+2+i*12;
+    const tag=g(entry);
+    if(tag===0x8825)gpsOff=tiffStart+gl(entry+8);
+    if(tag===0x9003){const sOff=tiffStart+gl(entry+8);let s='';for(let j=0;j<19;j++)s+=String.fromCharCode(view.getUint8(sOff+j));dateStr=s;}
+  }
+  if(!gpsOff)return{date:dateStr};
+  const gCnt=g(gpsOff);
+  const gps={};
+  for(let i=0;i<gCnt;i++){
+    const entry=gpsOff+2+i*12;
+    const tag=g(entry);
+    if(tag===1)gps.latRef=String.fromCharCode(view.getUint8(entry+8));
+    if(tag===3)gps.lngRef=String.fromCharCode(view.getUint8(entry+8));
+    if(tag===2||tag===4){
+      const vOff=tiffStart+gl(entry+8);
+      const d=gl(vOff)/gl(vOff+4);
+      const m=gl(vOff+8)/gl(vOff+12);
+      const s=gl(vOff+16)/gl(vOff+20);
+      const dec=d+m/60+s/3600;
+      if(tag===2)gps.lat=dec;else gps.lng=dec;
+    }
+  }
+  if(gps.latRef==='S'&&gps.lat)gps.lat=-gps.lat;
+  if(gps.lngRef==='W'&&gps.lng)gps.lng=-gps.lng;
+  return{lat:gps.lat||null,lng:gps.lng||null,date:dateStr};
+}
+
+function resizePhoto(file,maxW){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      const r=Math.min(maxW/img.width,maxW/img.height,1);
+      c.width=img.width*r;c.height=img.height*r;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      resolve(c.toDataURL('image/jpeg',0.7));
+    };
+    img.src=URL.createObjectURL(file);
+  });
+}
+
+async function handleBenchUpload(input){
+  const file=input.files[0];if(!file)return;
+  const [exif,dataUrl]=await Promise.all([readExifGps(file),resizePhoto(file,600)]);
+  const date=exif.date?exif.date.replace(/:/g,'-').slice(0,10):new Date().toISOString().slice(0,10);
+  // Show caption input
+  const modal=document.getElementById('bench-upload-modal');
+  if(!modal)return;
+  modal.dataset.lat=exif.lat||'';
+  modal.dataset.lng=exif.lng||'';
+  modal.dataset.date=date;
+  modal.dataset.photo=dataUrl;
+  document.getElementById('bench-upload-preview').src=dataUrl;
+  document.getElementById('bench-upload-gps').textContent=exif.lat?'\u2705 GPS found':'\u274c No GPS — location unknown';
+  document.getElementById('bench-upload-date').textContent=date;
+  document.getElementById('bench-upload-caption').value='';
+  modal.style.display='flex';
+}
+
+function saveBenchFromUpload(){
+  const modal=document.getElementById('bench-upload-modal');if(!modal)return;
+  const lat=parseFloat(modal.dataset.lat)||null;
+  const lng=parseFloat(modal.dataset.lng)||null;
+  const bench={
+    name:document.getElementById('bench-upload-caption').value.trim().split('\n')[0].slice(0,100),
+    caption:document.getElementById('bench-upload-caption').value.trim().slice(0,300),
+    lat,lng,
+    photos:[modal.dataset.photo],
+    dateAdded:modal.dataset.date
+  };
+  // Reverse geocode if GPS
+  if(lat&&lng){
+    fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&zoom=10',{headers:{'User-Agent':'GaryLand/1.0'}})
+      .then(r=>r.json()).then(d=>{
+        bench.country=d.address?.country||'Unknown';
+        bench.country_code=(d.address?.country_code||'').toUpperCase();
+        bench.city=d.address?.city||d.address?.town||d.address?.village||d.address?.state||'Unknown';
+        benches.unshift(bench);saveBenches(benches);
+        modal.style.display='none';renderBenchList();if(benchGlobe)initBenchGlobe(lat,lng);
+      }).catch(()=>{benches.unshift(bench);saveBenches(benches);modal.style.display='none';renderBenchList();});
+  } else {
+    benches.unshift(bench);saveBenches(benches);modal.style.display='none';renderBenchList();
+  }
+}
 
 let benchGlobe=null,benchLeafletMap=null,benchMarkers=[],benchGeoCache={},benchEnriching=false;
 
@@ -1737,6 +1855,18 @@ function renderBenches(){
   const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;
   app.innerHTML=`<div class="favs-screen">
     <button class="favs-back-btn" onclick="closeBenches()">\u2190 Back</button>
+    <button class="favs-back-btn" style="left:auto;right:12px;color:#d4a853;border-color:#d4a853" onclick="document.getElementById('bench-file-input').click()">+ Add</button>
+    <input type="file" id="bench-file-input" accept="image/*" style="display:none" onchange="handleBenchUpload(this)">
+    <div id="bench-upload-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;padding:20px">
+      <div style="background:#1a1917;border:1px solid #2a2826;border-radius:16px;padding:20px;max-width:340px;width:100%">
+        <img id="bench-upload-preview" style="width:100%;border-radius:10px;margin-bottom:12px" src="">
+        <p id="bench-upload-gps" style="font-size:12px;margin-bottom:4px"></p>
+        <p id="bench-upload-date" style="font-size:12px;color:#8a8478;margin-bottom:12px"></p>
+        <textarea id="bench-upload-caption" class="input" rows="3" placeholder="Add a caption..." style="resize:none;margin-bottom:12px"></textarea>
+        <button class="btn active" style="width:100%" onclick="saveBenchFromUpload()">Save Bench</button>
+        <button class="btn" style="width:100%;margin-top:8px" onclick="document.getElementById('bench-upload-modal').style.display='none'">Cancel</button>
+      </div>
+    </div>
     <div class="favs-globe-wrap">
       <div id="bench-globe" style="width:100%;height:100%"></div>
       <div class="favs-leaflet-wrap" id="bench-leaflet"></div>
