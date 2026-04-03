@@ -1410,12 +1410,6 @@ function scrollToCountry(cc){
 function highlightFavItem(idx){
   const item=document.getElementById('fav-item-'+idx);
   if(!item)return;
-  // Scroll within the list's own scroll container
-  const listArea=document.getElementById('fav-list');
-  if(listArea){
-    const top=item.offsetTop-listArea.offsetTop;
-    listArea.scrollTop=top;
-  }
   item.classList.add('fav-item-flash');
   setTimeout(()=>item.classList.remove('fav-item-flash'),2000);
 }
