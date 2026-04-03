@@ -1499,6 +1499,13 @@ function scrollToCountry(cc){
 function highlightFavItem(idx){
   const item=document.getElementById('fav-item-'+idx);
   if(!item)return;
+  // Scroll the list so this card is at the top
+  const listArea=document.getElementById('fav-list');
+  if(listArea){
+    const listTop=listArea.getBoundingClientRect().top;
+    const itemTop=item.getBoundingClientRect().top;
+    listArea.scrollTop+=itemTop-listTop;
+  }
   item.classList.add('fav-item-flash');
   setTimeout(()=>item.classList.remove('fav-item-flash'),2000);
 }
