@@ -1043,7 +1043,8 @@ async function sendChat(){
   const p=S.chatPlace,q=S.query;
   S.chatMsgs.push({role:"user",content:text});S.chatLoading=true;renderChat();
   try{
-    const sys=`You are currently in GaryLand venue chat mode. The user tapped "Tell me more" on a venue card. Venue: "${p.name}" at ${p.address}. Location context: ${q.loc}.${q.sun?` They want sun at ${q.sun.time} on ${q.sun.date}.`:""} Be helpful and specific about this place. Plain text only — no markdown. You CANNOT show images.`;
+    const loc=q?.loc||S.loc||p.address||'';
+    const sys=`You are currently in GaryLand venue chat mode. The user tapped "Tell me more" on a venue card. Venue: "${p.name}" at ${p.address}. Location context: ${loc}.${q?.sun?` They want sun at ${q.sun.time} on ${q.sun.date}.`:""} Be helpful and specific about this place. Plain text only — no markdown. You CANNOT show images.`;
     const venueKey="venue-"+encodeURIComponent(p.name).slice(0,30);
     const reply=await callClaude(S.chatMsgs.map(m=>({role:m.role,content:m.content})),sys,venueKey);
     S.chatMsgs.push({role:"assistant",content:reply||"No response."});
