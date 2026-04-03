@@ -1306,8 +1306,7 @@ function initFavGlobe(lat,lng){
   favourites.forEach((f,i)=>{if(f.lat&&f.lng)pins.push({lat:f.lat,lng:f.lng,catIcon:f.catIcon||'\u{1F4CD}',idx:i});});
 
   favGlobe=Globe()
-    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+    .globeTileEngineUrl((x,y,l)=>`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${l}/${y}/${x}`)
     .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
     .width(w).height(h)
     .showAtmosphere(true)
