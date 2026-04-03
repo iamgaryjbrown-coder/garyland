@@ -1423,8 +1423,15 @@ function showFavStreetView(idx){
   setTimeout(()=>{
     loadLeaflet().then(()=>{
       const wrap=document.getElementById('fav-leaflet');if(!wrap)return;
-      // Clean up old map
-      if(favLeafletMap){favLeafletMap.remove();favLeafletMap=null;}
+      // If Leaflet already showing, just fly to new location
+      if(favLeafletMap){
+        favLeafletMap.flyTo([f.lat,f.lng],17,{duration:1.2});
+        favLeafletMap.eachLayer(l=>{if(l instanceof L.Marker)favLeafletMap.removeLayer(l);});
+        const icon2=L.divIcon({className:'fav-leaflet-pin',html:`<div style="width:36px;height:36px;background:rgba(26,25,23,0.9);border:2px solid #d4a853;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(0,0,0,0.6)">${f.catIcon||'\u{1F4CD}'}</div>`,iconSize:[36,36],iconAnchor:[18,18]});
+        L.marker([f.lat,f.lng],{icon:icon2,interactive:false}).addTo(favLeafletMap);
+        highlightFavItem(idx);
+        return;
+      }
       favLeafletMap=L.map(wrap,{zoomControl:false,attributionControl:false}).setView([f.lat,f.lng],17);
       L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom:21,subdomains:['mt0','mt1','mt2','mt3']}).addTo(favLeafletMap);
       // Single gold pin marker
