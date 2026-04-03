@@ -1858,7 +1858,7 @@ function openBenches(){S.screen="benches";render();}
 
 function groupBenchesByLocation(){
   const groups={};
-  BENCH_DATA.forEach((b,i)=>{
+  benches.forEach((b,i)=>{
     const cc=b.country_code||'__';
     const country=b.country||(cc==='__'?'Uncategorised':'Unknown');
     const city=b.city||'Unknown';
@@ -1916,7 +1916,7 @@ function initBenchGlobe(lat,lng){
   container.innerHTML='';
   const w=container.clientWidth,h=container.clientHeight;
   const pins=[];
-  BENCH_DATA.forEach((b,i)=>{if(b.lat&&b.lng)pins.push({lat:b.lat,lng:b.lng,idx:i});});
+  benches.forEach((b,i)=>{if(b.lat&&b.lng)pins.push({lat:b.lat,lng:b.lng,idx:i});});
 
   benchGlobe=Globe()
     .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
@@ -1956,7 +1956,7 @@ function benchPinIcon(isActive){
 function addAllBenchPins(activeIdx){
   if(!benchLeafletMap)return;
   benchLeafletMap.eachLayer(l=>{if(l instanceof L.Marker)benchLeafletMap.removeLayer(l);});
-  BENCH_DATA.forEach((b,i)=>{
+  benches.forEach((b,i)=>{
     if(!b.lat||!b.lng)return;
     const m=L.marker([b.lat,b.lng],{icon:benchPinIcon(i===activeIdx),interactive:i!==activeIdx,zIndexOffset:i===activeIdx?1000:0});
     m.on('click',()=>showBenchStreetView(i));
@@ -1967,7 +1967,7 @@ function addAllBenchPins(activeIdx){
 function renderBenchList(){
   const flagsEl=document.getElementById('bench-flags'),listEl=document.getElementById('bench-list');
   if(!listEl)return;
-  if(!BENCH_DATA.length){
+  if(!benches.length){
     if(flagsEl)flagsEl.innerHTML='';
     listEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px"><p style="color:#5a5548;font-size:14px;text-align:center">No benches yet.</p></div>';
     return;
@@ -2013,7 +2013,7 @@ function updateBenchNavButtons(b){
 }
 
 function showBenchStreetView(idx){
-  const b=BENCH_DATA[idx];if(!b?.lat||!b?.lng)return;
+  const b=benches[idx];if(!b?.lat||!b?.lng)return;
   if(benchLeafletMap){
     addAllBenchPins(idx);
     const cur=benchLeafletMap.getCenter();
@@ -2051,7 +2051,7 @@ function showBenchGlobe(){
   const gDiv=document.getElementById('bench-globe');if(gDiv)gDiv.style.visibility='visible';
   setTimeout(()=>{if(benchLeafletMap){benchLeafletMap.remove();benchLeafletMap=null;}},600);
   if(benchGlobe){
-    const hasMultiple=BENCH_DATA.filter(b=>b.lat&&b.lng).length>1;
+    const hasMultiple=benches.filter(b=>b.lat&&b.lng).length>1;
     const lat=S.userLat||51.5,lng=S.userLng||-0.12;
     benchGlobe.pointOfView({lat,lng,altitude:hasMultiple?0.7:1.5},1500);
   }
@@ -2090,7 +2090,7 @@ function closeBenches(){
 
 async function enrichBenchGeo(){
   benchEnriching=true;let changed=false;
-  for(const b of BENCH_DATA){
+  for(const b of benches){
     if(!benchEnriching)break;
     if(b.country_code||!b.lat||!b.lng)continue;
     try{
