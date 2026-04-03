@@ -1339,7 +1339,8 @@ function renderFavourites(){
     <div class="favs-globe-wrap">
       <div id="fav-globe" style="width:100%;height:100%"></div>
       <div class="favs-leaflet-wrap" id="fav-leaflet"></div>
-      <button class="favs-globe-return" id="fav-globe-btn" onclick="showFavGlobe()">\u{1F30D} Globe</button>
+      <div id="fav-nav-buttons" class="map-popup-buttons" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:10"></div>
+      <button class="favs-globe-return" id="fav-globe-btn" style="bottom:70px" onclick="showFavGlobe()">\u{1F30D} Globe</button>
     </div>
     <div class="favs-panel">
       <div class="favs-flag-strip" id="fav-flags"></div>
@@ -1449,7 +1450,7 @@ function renderFavList(){
           <div class="card-head">
             <div style="min-width:0;flex:1">
               <div class="card-name">${esc(f.name)}</div>
-              <div class="card-addr" style="cursor:pointer;text-decoration:underline;text-decoration-color:#4a6a4a;color:#7dbd7d" onclick="event.stopPropagation();openFavMap(${i})">${esc(f.address)}</div>
+              <div class="card-addr" style="color:#8a8478">${esc(f.address)}</div>
             </div>
             <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
               <button class="fav-btn" onclick="event.stopPropagation();removeFavourite(${i})" style="color:#e57373">\u2665</button>
@@ -1523,6 +1524,14 @@ function addAllLeafletPins(activeIdx){
   });
   favActiveIdx=activeIdx;
 }
+function updateFavNavButtons(f){
+  const nav=document.getElementById('fav-nav-buttons');if(!nav)return;
+  const enc=encodeURIComponent(f.name+', '+f.address);
+  const ll=f.lat&&f.lng?`${f.lat},${f.lng}`:'';
+  nav.innerHTML=`<a href="https://maps.apple.com/?daddr=${ll||enc}">\u{1F5FA}\u{FE0F} Apple</a><a href="https://www.google.com/maps/dir/?api=1&destination=${enc}">\u{1F4CD} Google</a><a href="https://waze.com/ul?ll=${ll}&q=${enc}&navigate=yes">\u{1F697} Waze</a>`;
+  nav.style.display='flex';
+}
+
 function showFavStreetView(idx){
   const f=favourites[idx];if(!f?.lat||!f?.lng)return;
 
@@ -1537,6 +1546,7 @@ function showFavStreetView(idx){
     } else {
       favLeafletMap.flyTo([f.lat,f.lng],17,{duration:2});
     }
+    updateFavNavButtons(f);
     highlightFavItem(idx);
     return;
   }
@@ -1554,6 +1564,7 @@ function showFavStreetView(idx){
       const gbtn=document.getElementById('fav-globe-btn');if(gbtn)gbtn.classList.add('active');
       document.querySelectorAll('.fav-globe-pin').forEach(p=>p.style.display='none');
       const gDiv=document.getElementById('fav-globe');if(gDiv)gDiv.style.visibility='hidden';
+      updateFavNavButtons(f);
       // Fix Leaflet size + highlight list item after transition settles
       setTimeout(()=>{
         if(favLeafletMap)favLeafletMap.invalidateSize();
@@ -1567,6 +1578,7 @@ function showFavGlobe(){
   const wrap=document.getElementById('fav-leaflet');
   if(wrap)wrap.classList.remove('active');
   const gbtn=document.getElementById('fav-globe-btn');if(gbtn)gbtn.classList.remove('active');
+  const nav=document.getElementById('fav-nav-buttons');if(nav)nav.style.display='none';
   document.querySelectorAll('.fav-globe-pin').forEach(p=>p.style.display='');
   const gDiv=document.getElementById('fav-globe');if(gDiv)gDiv.style.visibility='visible';
   // Clean up Leaflet after fade
