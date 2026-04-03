@@ -1298,8 +1298,9 @@ async function enrichFavGeoProgressive(){
   let changed=false;
   for(const f of favourites){
     if(!favEnriching)break;
-    // Step 1: if no coords, geocode the address
-    if((!f.lat||!f.lng)&&f.address){
+    // Step 1: if no coords OR coords from seed (4 decimal places = likely guessed), geocode the address
+    const likelyGuessed=f.lat&&(String(f.lat).split('.')[1]||'').length<=4;
+    if(((!f.lat||!f.lng)||likelyGuessed)&&f.address){
       const coords=await geocodeAddress(f.address);
       if(coords){f.lat=coords.lat;f.lng=coords.lng;changed=true;}
       await new Promise(r=>setTimeout(r,1100));
