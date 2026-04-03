@@ -1320,8 +1320,7 @@ function initFavGlobe(lat,lng){
       el.style.pointerEvents='auto';el.style.cursor='pointer';
       el.style.transition='opacity 250ms';
       el.onclick=()=>{
-        if(favGlobe)favGlobe.pointOfView({lat:d.lat,lng:d.lng,altitude:0.12},1500);
-        // Scroll list to this venue after a beat
+        if(favGlobe)favGlobe.pointOfView({lat:d.lat,lng:d.lng,altitude:0.004},2000);
         setTimeout(()=>{
           const item=document.getElementById('fav-item-'+d.idx);
           if(item){
@@ -1348,7 +1347,7 @@ function initFavGlobe(lat,lng){
         c.zoomSpeed=0.4;
         c.enableDamping=true;
         c.dampingFactor=0.12;
-        c.minDistance=101;
+        c.minDistance=100.3;
         c.maxDistance=600;
       }catch(e){}
     };
@@ -1411,9 +1410,9 @@ function renderFavList(){
 
 function flyToFav(idx){
   const f=favourites[idx];if(!f?.lat||!f?.lng||!favGlobe)return;
-  favGlobe.pointOfView({lat:f.lat,lng:f.lng,altitude:0.12},2000);
+  favGlobe.pointOfView({lat:f.lat,lng:f.lng,altitude:0.004},2000);
   const item=document.getElementById('fav-item-'+idx);
-  if(item){item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
+  if(item){item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),2000);}
 }
 
 function scrollToCountry(cc){
