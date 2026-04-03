@@ -1490,10 +1490,41 @@ function flyToFav(idx){showFavStreetView(idx);}
 
 function scrollToCountry(cc){
   const el=document.getElementById('fav-country-'+cc);
-  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  if(el){
+    const listArea=document.getElementById('fav-list');
+    if(listArea){const listTop=listArea.getBoundingClientRect().top;const elTop=el.getBoundingClientRect().top;listArea.scrollTop+=elTop-listTop;}
+  }
+  // Collect all favs for this country
   const groups=groupFavsByLocation();const g=groups[cc];if(!g)return;
-  const first=Object.values(g.cities)[0]?.[0];
-  if(first?.lat&&first?.lng&&favGlobe)favGlobe.pointOfView({lat:first.lat,lng:first.lng,altitude:0.5},2000);
+  const pts=[];
+  Object.values(g.cities).forEach(city=>city.forEach(f=>{if(f.lat&&f.lng)pts.push([f.lat,f.lng]);}));
+  if(!pts.length)return;
+
+  // ~5 mile margin ≈ 0.08 degrees
+  const margin=0.08;
+  const lats=pts.map(p=>p[0]),lngs=pts.map(p=>p[1]);
+  const bounds=[[Math.min(...lats)-margin,Math.min(...lngs)-margin],[Math.max(...lats)+margin,Math.max(...lngs)+margin]];
+
+  // If Leaflet is showing, fit bounds there
+  if(favLeafletMap){
+    addAllLeafletPins(-1);
+    favLeafletMap.flyToBounds(bounds,{duration:1.5,maxZoom:15});
+    const nav=document.getElementById('fav-nav-buttons');if(nav)nav.style.display='none';
+    return;
+  }
+  // Otherwise show Leaflet with country bounds
+  loadLeaflet().then(()=>{
+    const wrap=document.getElementById('fav-leaflet');if(!wrap)return;
+    if(favLeafletMap){favLeafletMap.remove();favLeafletMap=null;}
+    favLeafletMap=L.map(wrap,{zoomControl:false,attributionControl:false}).fitBounds(bounds);
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom:21,subdomains:['mt0','mt1','mt2','mt3']}).addTo(favLeafletMap);
+    addAllLeafletPins(-1);
+    wrap.classList.add('active');
+    const gbtn=document.getElementById('fav-globe-btn');if(gbtn)gbtn.classList.add('active');
+    document.querySelectorAll('.fav-globe-pin').forEach(p=>p.style.display='none');
+    const gDiv=document.getElementById('fav-globe');if(gDiv)gDiv.style.visibility='hidden';
+    setTimeout(()=>{if(favLeafletMap)favLeafletMap.invalidateSize();},650);
+  });
 }
 
 function highlightFavItem(idx){
