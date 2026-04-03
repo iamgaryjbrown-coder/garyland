@@ -1410,9 +1410,14 @@ function scrollToCountry(cc){
 let favLeafletMap=null;
 function showFavStreetView(idx){
   const f=favourites[idx];if(!f?.lat||!f?.lng)return;
-  // Highlight in list
+  // Highlight in list — scroll within the list container, not the page
   const item=document.getElementById('fav-item-'+idx);
-  if(item){item.scrollIntoView({behavior:'smooth',block:'start'});item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),2000);}
+  const listArea=document.querySelector('.favs-list-area');
+  if(item&&listArea){
+    const itemTop=item.offsetTop-listArea.offsetTop;
+    listArea.scrollTo({top:itemTop,behavior:'smooth'});
+    item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),2000);
+  }
   // Globe fly-in (medium zoom)
   if(favGlobe)favGlobe.pointOfView({lat:f.lat,lng:f.lng,altitude:0.05},1500);
   // After fly-in, crossfade to Leaflet
