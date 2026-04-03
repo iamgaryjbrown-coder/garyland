@@ -15,8 +15,15 @@ export default {
 
     // ── Favourites API ──
     if (path === "/favourites") {
-      if (request.method === "GET") return handleFavsGet(url, env);
-      if (request.method === "PUT") return handleFavsPut(request, env);
+      if (request.method === "GET") return handleKvGet(url, env, "fav");
+      if (request.method === "PUT") return handleKvPut(request, env, "fav");
+      return corsJson({ error: "Method not allowed" }, 405);
+    }
+
+    // ── Benches API ──
+    if (path === "/benches") {
+      if (request.method === "GET") return handleKvGet(url, env, "bench");
+      if (request.method === "PUT") return handleKvPut(request, env, "bench");
       return corsJson({ error: "Method not allowed" }, 405);
     }
 
@@ -46,19 +53,19 @@ export default {
 };
 
 // ═══════════════════════════════════════
-// Favourites KV
+// Generic KV storage (favourites + benches)
 // ═══════════════════════════════════════
-async function handleFavsGet(url, env) {
+async function handleKvGet(url, env, prefix) {
   const token = url.searchParams.get("token");
   if (!token) return corsJson({ error: "Missing token" }, 400);
-  const data = await env.FAVS.get("fav:" + token);
-  return corsJson({ favourites: data ? JSON.parse(data) : [] });
+  const data = await env.FAVS.get(prefix + ":" + token);
+  return corsJson({ data: data ? JSON.parse(data) : [] });
 }
 
-async function handleFavsPut(request, env) {
+async function handleKvPut(request, env, prefix) {
   const body = await request.json();
   if (!body.token) return corsJson({ error: "Missing token" }, 400);
-  await env.FAVS.put("fav:" + body.token, JSON.stringify(body.favourites || []));
+  await env.FAVS.put(prefix + ":" + body.token, JSON.stringify(body.data || []));
   return corsJson({ ok: true });
 }
 
