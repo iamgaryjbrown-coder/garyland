@@ -1520,7 +1520,7 @@ function scrollToCountry(cc){
     const wrap=document.getElementById('fav-leaflet');if(!wrap)return;
     if(favLeafletMap){favLeafletMap.remove();favLeafletMap=null;}
     favLeafletMap=L.map(wrap,{zoomControl:false,attributionControl:false}).fitBounds(bounds);
-    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom:21,subdomains:['mt0','mt1','mt2','mt3']}).addTo(favLeafletMap);
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:21,subdomains:['mt0','mt1','mt2','mt3']}).addTo(favLeafletMap);
     addAllLeafletPins(-1);
     wrap.classList.add('active');
     const gbtn=document.getElementById('fav-globe-btn');if(gbtn)gbtn.classList.add('active');
@@ -1598,7 +1598,7 @@ function showFavStreetView(idx){
     loadLeaflet().then(()=>{
       const wrap=document.getElementById('fav-leaflet');if(!wrap)return;
       favLeafletMap=L.map(wrap,{zoomControl:false,attributionControl:false}).setView([f.lat,f.lng],17);
-      L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom:21,subdomains:['mt0','mt1','mt2','mt3']}).addTo(favLeafletMap);
+      L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:21,subdomains:['mt0','mt1','mt2','mt3']}).addTo(favLeafletMap);
       addAllLeafletPins(idx);
       // Crossfade in + show globe button + hide globe pins
       wrap.classList.add('active');
