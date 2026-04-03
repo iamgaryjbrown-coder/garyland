@@ -1790,22 +1790,40 @@ function resizePhoto(file,maxW){
   });
 }
 
+let benchUploadPhotos=[],benchUploadMain=0;
+
 async function handleBenchUpload(input){
-  const file=input.files[0];if(!file)return;
-  const [exif,dataUrl]=await Promise.all([readExifGps(file),resizePhoto(file,600)]);
-  const date=exif.date?exif.date.replace(/:/g,'-').slice(0,10):new Date().toISOString().slice(0,10);
-  // Show caption input
+  const files=[...input.files];if(!files.length)return;
+  benchUploadPhotos=[];benchUploadMain=0;
+  let bestExif={};
+  // Process all files
+  for(const file of files){
+    const [exif,dataUrl]=await Promise.all([readExifGps(file),resizePhoto(file,600)]);
+    benchUploadPhotos.push(dataUrl);
+    if(exif.lat&&!bestExif.lat)bestExif=exif;
+    if(!bestExif.date&&exif.date)bestExif.date=exif.date;
+  }
+  const date=bestExif.date?bestExif.date.replace(/:/g,'-').slice(0,10):new Date().toISOString().slice(0,10);
   const modal=document.getElementById('bench-upload-modal');
   if(!modal)return;
-  modal.dataset.lat=exif.lat||'';
-  modal.dataset.lng=exif.lng||'';
+  modal.dataset.lat=bestExif.lat||'';
+  modal.dataset.lng=bestExif.lng||'';
   modal.dataset.date=date;
-  modal.dataset.photo=dataUrl;
-  document.getElementById('bench-upload-preview').src=dataUrl;
-  document.getElementById('bench-upload-gps').textContent=exif.lat?'\u2705 GPS found':'\u274c No GPS — location unknown';
+  // Render thumbnails
+  const thumbs=document.getElementById('bench-upload-thumbs');
+  thumbs.innerHTML=benchUploadPhotos.map((p,i)=>`<img src="${p}" style="height:80px;border-radius:8px;border:2px solid ${i===0?'#2dd4bf':'#2a2826'};cursor:pointer;flex-shrink:0" onclick="setBenchMain(${i})">`).join('');
+  document.getElementById('bench-upload-gps').textContent=bestExif.lat?'\u2705 GPS found':'\u274c No GPS \u2014 location unknown';
   document.getElementById('bench-upload-date').textContent=date;
   document.getElementById('bench-upload-caption').value='';
   modal.style.display='flex';
+  input.value='';
+}
+
+function setBenchMain(i){
+  benchUploadMain=i;
+  const thumbs=document.getElementById('bench-upload-thumbs');
+  if(!thumbs)return;
+  [...thumbs.children].forEach((img,j)=>img.style.border=j===i?'2px solid #2dd4bf':'2px solid #2a2826');
 }
 
 function saveBenchFromUpload(){
@@ -1816,7 +1834,7 @@ function saveBenchFromUpload(){
     name:document.getElementById('bench-upload-caption').value.trim().split('\n')[0].slice(0,100),
     caption:document.getElementById('bench-upload-caption').value.trim().slice(0,300),
     lat,lng,
-    photos:[modal.dataset.photo],
+    photos:[benchUploadPhotos[benchUploadMain],...benchUploadPhotos.filter((_,i)=>i!==benchUploadMain)],
     dateAdded:modal.dataset.date
   };
   // Reverse geocode if GPS
@@ -1856,12 +1874,13 @@ function renderBenches(){
   app.innerHTML=`<div class="favs-screen">
     <button class="favs-back-btn" onclick="closeBenches()">\u2190 Back</button>
     <button class="favs-back-btn" style="left:auto;right:12px;color:#d4a853;border-color:#d4a853" onclick="document.getElementById('bench-file-input').click()">+ Add</button>
-    <input type="file" id="bench-file-input" accept="image/*" style="display:none" onchange="handleBenchUpload(this)">
-    <div id="bench-upload-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;padding:20px">
+    <input type="file" id="bench-file-input" accept="image/*" multiple style="display:none" onchange="handleBenchUpload(this)">
+    <div id="bench-upload-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;padding:20px;overflow-y:auto">
       <div style="background:#1a1917;border:1px solid #2a2826;border-radius:16px;padding:20px;max-width:340px;width:100%">
-        <img id="bench-upload-preview" style="width:100%;border-radius:10px;margin-bottom:12px" src="">
+        <div id="bench-upload-thumbs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px"></div>
         <p id="bench-upload-gps" style="font-size:12px;margin-bottom:4px"></p>
-        <p id="bench-upload-date" style="font-size:12px;color:#8a8478;margin-bottom:12px"></p>
+        <p id="bench-upload-date" style="font-size:12px;color:#8a8478;margin-bottom:8px"></p>
+        <p style="font-size:11px;color:#6a645a;margin-bottom:12px">Tap a photo to set as main</p>
         <textarea id="bench-upload-caption" class="input" rows="3" placeholder="Add a caption..." style="resize:none;margin-bottom:12px"></textarea>
         <button class="btn active" style="width:100%" onclick="saveBenchFromUpload()">Save Bench</button>
         <button class="btn" style="width:100%;margin-top:8px" onclick="document.getElementById('bench-upload-modal').style.display='none'">Cancel</button>
