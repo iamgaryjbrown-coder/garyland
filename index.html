@@ -1360,8 +1360,7 @@ function renderFavourites(){
     if(g)g.innerHTML='<p style="color:#e57373;padding:20px;text-align:center;padding-top:40%">Globe failed to load</p>';
   });
 
-  // Enrich geo data progressively (updates list as results arrive)
-  enrichFavGeoProgressive();
+  // Enrichment now deferred inside initFavGlobe after fly-in completes
 }
 
 function initFavGlobe(lat,lng){
@@ -1382,8 +1381,8 @@ function initFavGlobe(lat,lng){
     .showAtmosphere(true)
     .atmosphereColor('lightskyblue')
     .atmosphereAltitude(0.15)
-    // Pins as HTML elements — set data upfront
-    .htmlElementsData(pins)
+    // Pins added after fly-in animation completes
+    .htmlElementsData([])
     .htmlElement(d=>{
       const el=document.createElement('div');el.className='fav-globe-pin';
       el.textContent=d.catIcon;
@@ -1398,21 +1397,25 @@ function initFavGlobe(lat,lng){
 
   // Configure once globe scene is ready
   favGlobe.onGlobeReady(()=>{
-    // Tame controls for globe overview (no street-level needed — Leaflet handles that)
     try{
       const c=favGlobe.controls();
       if(c){c.rotateSpeed=0.3;c.zoomSpeed=0.5;c.enableDamping=true;c.dampingFactor=0.12;c.minDistance=101;c.maxDistance=600;}
     }catch(e){}
 
-    // Current location pulsing ring
-    if(S.userLat&&S.userLng){
-      favGlobe.ringsData([{lat:S.userLat,lng:S.userLng}])
-        .ringColor(()=>'rgba(74,144,217,0.9)')
-        .ringMaxRadius(1.5).ringPropagationSpeed(1).ringRepeatPeriod(2000);
-    }
-    // Fly in after showing full globe
+    // Fly in first — nothing else until animation finishes
     const alt=hasMultiple?0.7:favourites.length===1?0.15:1.5;
-    setTimeout(()=>{favGlobe.pointOfView({lat,lng,altitude:alt},2500);},800);
+    setTimeout(()=>{favGlobe.pointOfView({lat,lng,altitude:alt},2500);},600);
+
+    // After fly-in completes, add pins + rings + start enrichment
+    setTimeout(()=>{
+      if(S.userLat&&S.userLng){
+        favGlobe.ringsData([{lat:S.userLat,lng:S.userLng}])
+          .ringColor(()=>'rgba(74,144,217,0.9)')
+          .ringMaxRadius(1.5).ringPropagationSpeed(1).ringRepeatPeriod(2000);
+      }
+      favGlobe.htmlElementsData(pins);
+      enrichFavGeoProgressive();
+    },3500);
   });
 }
 
