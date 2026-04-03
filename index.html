@@ -1360,7 +1360,7 @@ function renderFavourites(){
     <div class="favs-globe-wrap">
       <div id="fav-globe" style="width:100%;height:100%"></div>
       <div class="favs-leaflet-wrap" id="fav-leaflet"></div>
-      <div id="fav-nav-buttons" class="map-popup-buttons" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:10;padding:8px 12px;background:rgba(26,25,23,0.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)"></div>
+      <div id="fav-nav-buttons" style="display:none;position:absolute;top:12px;right:12px;z-index:10"></div>
       <button class="favs-globe-return" id="fav-globe-btn" style="bottom:12px;left:12px;transform:none;font-size:22px;padding:6px 8px;line-height:1" onclick="showFavGlobe()">\u{1F30D}</button>
     </div>
     <div class="favs-panel">
@@ -1594,8 +1594,8 @@ function updateFavNavButtons(f){
   const nav=document.getElementById('fav-nav-buttons');if(!nav)return;
   const enc=encodeURIComponent(f.name+', '+f.address);
   const ll=f.lat&&f.lng?`${f.lat},${f.lng}`:'';
-  nav.innerHTML=`<a href="https://www.google.com/maps/dir/?api=1&destination=${enc}">\u{1F4CD} Google Maps</a><a href="https://waze.com/ul?ll=${ll}&q=${enc}&navigate=yes">\u{1F697} Waze</a>`;
-  nav.style.display='flex';
+  nav.innerHTML=`<a href="https://www.google.com/maps/dir/?api=1&destination=${enc}" style="display:inline-block;padding:6px 10px;border-radius:16px;background:rgba(26,25,23,0.85);border:1px solid #2a2826;color:#e8e2d6;text-decoration:none;font-size:13px;font-family:'DM Sans',sans-serif;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">\u{1F4CD} Directions</a>`;
+  nav.style.display='block';
 }
 
 function showFavStreetView(idx){
@@ -1746,13 +1746,25 @@ function parseExif(view,start){
   const gl=n=>le?view.getUint32(n,true):view.getUint32(n);
   const tiffStart=start+6;
   const ifdOff=tiffStart+gl(tiffStart+4);
-  let gpsOff=0,dateStr='';
+  let gpsOff=0,exifOff=0,dateStr='';
   const cnt=g(ifdOff);
   for(let i=0;i<cnt;i++){
     const entry=ifdOff+2+i*12;
     const tag=g(entry);
     if(tag===0x8825)gpsOff=tiffStart+gl(entry+8);
-    if(tag===0x9003){const sOff=tiffStart+gl(entry+8);let s='';for(let j=0;j<19;j++)s+=String.fromCharCode(view.getUint8(sOff+j));dateStr=s;}
+    if(tag===0x8769)exifOff=tiffStart+gl(entry+8);
+    if(tag===0x0132){try{const sOff=tiffStart+gl(entry+8);let s='';for(let j=0;j<19;j++)s+=String.fromCharCode(view.getUint8(sOff+j));if(!dateStr)dateStr=s;}catch(e){}}
+  }
+  // Read EXIF sub-IFD for DateTimeOriginal
+  if(exifOff){
+    try{
+      const eCnt=g(exifOff);
+      for(let i=0;i<eCnt;i++){
+        const entry=exifOff+2+i*12;
+        const tag=g(entry);
+        if(tag===0x9003||tag===0x9004){const sOff=tiffStart+gl(entry+8);let s='';for(let j=0;j<19;j++)s+=String.fromCharCode(view.getUint8(sOff+j));dateStr=s;break;}
+      }
+    }catch(e){}
   }
   if(!gpsOff)return{date:dateStr};
   const gCnt=g(gpsOff);
@@ -1904,7 +1916,7 @@ function renderBenches(){
     <div class="favs-globe-wrap">
       <div id="bench-globe" style="width:100%;height:100%"></div>
       <div class="favs-leaflet-wrap" id="bench-leaflet"></div>
-      <div id="bench-nav-buttons" class="map-popup-buttons" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:10;padding:8px 12px;background:rgba(26,25,23,0.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)"></div>
+      <div id="bench-nav-buttons" style="display:none;position:absolute;top:12px;right:12px;z-index:10"></div>
       <button class="favs-globe-return" id="bench-globe-btn" style="bottom:12px;left:12px;transform:none;font-size:22px;padding:6px 8px;line-height:1" onclick="showBenchGlobe()">\u{1F30D}</button>
     </div>
     <div class="favs-panel">
@@ -2024,8 +2036,8 @@ function highlightBenchItem(idx){
 function updateBenchNavButtons(b){
   const nav=document.getElementById('bench-nav-buttons');if(!nav)return;
   const ll=b.lat&&b.lng?`${b.lat},${b.lng}`:'';
-  nav.innerHTML=`<a href="https://www.google.com/maps/dir/?api=1&destination=${ll}">\u{1F4CD} Google Maps</a><a href="https://waze.com/ul?ll=${ll}&navigate=yes">\u{1F697} Waze</a>`;
-  nav.style.display='flex';
+  nav.innerHTML=`<a href="https://www.google.com/maps/dir/?api=1&destination=${ll}" style="display:inline-block;padding:6px 10px;border-radius:16px;background:rgba(26,25,23,0.85);border:1px solid #2a2826;color:#e8e2d6;text-decoration:none;font-size:13px;font-family:'DM Sans',sans-serif;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">\u{1F4CD} Directions</a>`;
+  nav.style.display='block';
 }
 
 function showBenchStreetView(idx){
