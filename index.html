@@ -1837,19 +1837,34 @@ function saveBenchFromUpload(){
     photos:[benchUploadPhotos[benchUploadMain],...benchUploadPhotos.filter((_,i)=>i!==benchUploadMain)],
     dateAdded:modal.dataset.date
   };
-  // Reverse geocode if GPS
+  // Save immediately, then enrich with geo data
+  benches.unshift(bench);
+  saveBenches(benches);
+  modal.style.display='none';
+  renderBenchList();
+  if(benchGlobe&&lat&&lng)initBenchGlobe(lat,lng);
+  // Async geocode — updates the already-saved bench
   if(lat&&lng){
     fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&zoom=10',{headers:{'User-Agent':'GaryLand/1.0'}})
       .then(r=>r.json()).then(d=>{
         bench.country=d.address?.country||'Unknown';
         bench.country_code=(d.address?.country_code||'').toUpperCase();
         bench.city=d.address?.city||d.address?.town||d.address?.village||d.address?.state||'Unknown';
-        benches.unshift(bench);saveBenches(benches);
-        modal.style.display='none';renderBenchList();if(benchGlobe)initBenchGlobe(lat,lng);
-      }).catch(()=>{benches.unshift(bench);saveBenches(benches);modal.style.display='none';renderBenchList();});
-  } else {
-    benches.unshift(bench);saveBenches(benches);modal.style.display='none';renderBenchList();
+        saveBenches(benches);renderBenchList();
+      }).catch(()=>{});
   }
+}
+
+function openBenchLightbox(benchIdx,photoIdx){
+  const b=benches[benchIdx];if(!b)return;
+  cardPhotos['bench_'+benchIdx]=b.photos;
+  lbCard='bench_'+benchIdx;lbIdx=photoIdx;renderLightbox();
+}
+
+function removeBench(idx){
+  if(!confirm('Remove this bench?'))return;
+  benches.splice(idx,1);saveBenches(benches);renderBenchList();
+  if(benchGlobe){const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;initBenchGlobe(cLat,cLng);}
 }
 
 let benchGlobe=null,benchLeafletMap=null,benchMarkers=[],benchGeoCache={},benchEnriching=false;
@@ -1985,8 +2000,9 @@ function renderBenchList(){
       g.cities[city].forEach(b=>{
         const i=b._idx;
         h+=`<div class="card" id="bench-item-${i}" onclick="flyToBench(${i})" style="margin:8px 10px;cursor:pointer">
-          <div class="photo-strip" style="padding-top:8px">${b.photos.map(p=>`<img src="${p}" alt="bench" loading="lazy" style="height:150px" onclick="event.stopPropagation()">`).join('')}</div>
-          ${b.caption?`<div class="card-body"><p class="card-summary">${esc(b.caption)}</p></div>`:''}
+          <div style="display:flex;justify-content:flex-end;padding:8px 10px 0"><button class="fav-remove" onclick="event.stopPropagation();removeBench(${i})" title="Remove">\u2715</button></div>
+          <div class="photo-strip">${b.photos.map((p,j)=>`<img src="${p}" alt="bench" loading="lazy" style="height:150px" onclick="event.stopPropagation();openBenchLightbox(${i},${j})">`).join('')}</div>
+          ${b.caption?`<div class="card-body"><p class="card-summary">${esc(b.caption)}</p><div style="font-size:11px;color:#5a5548;margin-top:6px">${b.dateAdded||''}</div></div>`:''}
         </div>`;
       });
     });
