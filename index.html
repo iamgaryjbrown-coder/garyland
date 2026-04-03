@@ -1746,9 +1746,7 @@ function renderBenches(){
     </div>
     <div class="favs-panel">
       <div class="favs-flag-strip" id="bench-flags"></div>
-      <div class="favs-list-area" id="bench-list">
-        <div style="padding:20px;text-align:center"><p style="color:#5a5548;font-size:13px">Loading globe\u2026</p></div>
-      </div>
+      <div class="favs-list-area" id="bench-list"></div>
     </div>
   </div>`;
 
@@ -1839,9 +1837,8 @@ function renderBenchList(){
       h+=`<div class="fav-city-header">${esc(city)}</div>`;
       g.cities[city].forEach(b=>{
         const i=b._idx;
-        h+=`<div class="card" id="bench-item-${i}" onclick="flyToBench(${i})" style="margin:8px 10px;animation:fade-up 0.4s ease both;cursor:pointer">
-          <div class="card-head"><div style="min-width:0;flex:1"><div class="card-name">\u{1FA91} ${esc(b.name)}</div></div></div>
-          <div class="photo-strip">${b.photos.map(p=>`<img src="${p}" alt="bench" loading="lazy" style="height:130px" onclick="event.stopPropagation()">`).join('')}</div>
+        h+=`<div class="card" id="bench-item-${i}" onclick="flyToBench(${i})" style="margin:8px 10px;cursor:pointer">
+          <div class="photo-strip" style="padding-top:8px">${b.photos.map(p=>`<img src="${p}" alt="bench" loading="lazy" style="height:150px" onclick="event.stopPropagation()">`).join('')}</div>
           ${b.caption?`<div class="card-body"><p class="card-summary">${esc(b.caption)}</p></div>`:''}
         </div>`;
       });
