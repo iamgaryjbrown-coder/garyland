@@ -1301,8 +1301,9 @@ function initFavGlobe(lat,lng){
   const w=container.clientWidth,h=container.clientHeight;
   const hasMultiple=favourites.filter(f=>f.lat&&f.lng).length>1;
 
-  // Build pin data
-  const pins=favourites.filter(f=>f.lat&&f.lng).map((f,i)=>({lat:f.lat,lng:f.lng,catIcon:f.catIcon||'\u{1F4CD}',idx:i}));
+  // Build pin data — preserve original favourites index for list linking
+  const pins=[];
+  favourites.forEach((f,i)=>{if(f.lat&&f.lng)pins.push({lat:f.lat,lng:f.lng,catIcon:f.catIcon||'\u{1F4CD}',idx:i});});
 
   favGlobe=Globe()
     .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
@@ -1321,8 +1322,15 @@ function initFavGlobe(lat,lng){
       el.style.transition='opacity 250ms';
       el.onclick=()=>{
         if(favGlobe)favGlobe.pointOfView({lat:d.lat,lng:d.lng,altitude:0.12},1500);
-        const item=document.getElementById('fav-item-'+d.idx);
-        if(item){item.scrollIntoView({behavior:'smooth',block:'center'});item.classList.add('fav-item-flash');setTimeout(()=>item.classList.remove('fav-item-flash'),1500);}
+        // Scroll list to this venue after a beat
+        setTimeout(()=>{
+          const item=document.getElementById('fav-item-'+d.idx);
+          if(item){
+            item.scrollIntoView({behavior:'smooth',block:'start'});
+            item.classList.add('fav-item-flash');
+            setTimeout(()=>item.classList.remove('fav-item-flash'),2000);
+          }
+        },300);
       };
       return el;
     })
@@ -1363,7 +1371,8 @@ function initFavGlobe(lat,lng){
 
 function addFavMarkers(){
   if(!favGlobe)return;
-  const pins=favourites.filter(f=>f.lat&&f.lng).map((f,i)=>({lat:f.lat,lng:f.lng,catIcon:f.catIcon||'\u{1F4CD}',idx:i}));
+  const pins=[];
+  favourites.forEach((f,i)=>{if(f.lat&&f.lng)pins.push({lat:f.lat,lng:f.lng,catIcon:f.catIcon||'\u{1F4CD}',idx:i});});
   favGlobe.htmlElementsData(pins);
 }
 
