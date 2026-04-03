@@ -1824,7 +1824,9 @@ async function handleBenchUpload(input){
   // Render thumbnails
   const thumbs=document.getElementById('bench-upload-thumbs');
   thumbs.innerHTML=benchUploadPhotos.map((p,i)=>`<img src="${p}" style="height:80px;border-radius:8px;border:2px solid ${i===0?'#2dd4bf':'#2a2826'};cursor:pointer;flex-shrink:0" onclick="setBenchMain(${i})">`).join('');
-  document.getElementById('bench-upload-gps').textContent=bestExif.lat?'\u2705 GPS found':'\u274c No GPS \u2014 location unknown';
+  document.getElementById('bench-upload-gps').textContent=bestExif.lat?'\u2705 GPS found':'\u274c No GPS \u2014 enter location below';
+  document.getElementById('bench-upload-location').style.display=bestExif.lat?'none':'block';
+  document.getElementById('bench-upload-location').value='';
   document.getElementById('bench-upload-date').textContent=date;
   document.getElementById('bench-upload-caption').value='';
   modal.style.display='flex';
@@ -1849,6 +1851,23 @@ function saveBenchFromUpload(){
     photos:[benchUploadPhotos[benchUploadMain],...benchUploadPhotos.filter((_,i)=>i!==benchUploadMain)],
     dateAdded:modal.dataset.date
   };
+  // If no GPS, geocode the typed location first
+  const locInput=document.getElementById('bench-upload-location')?.value?.trim();
+  if(!lat&&!lng&&locInput){
+    fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(locInput)+'&format=json&limit=1',{headers:{'User-Agent':'GaryLand/1.0'}})
+      .then(r=>r.json()).then(d=>{
+        if(d[0]){bench.lat=parseFloat(d[0].lat);bench.lng=parseFloat(d[0].lon);}
+        return fetch('https://nominatim.openstreetmap.org/reverse?lat='+bench.lat+'&lon='+bench.lng+'&format=json&zoom=10',{headers:{'User-Agent':'GaryLand/1.0'}});
+      }).then(r=>r.json()).then(d=>{
+        bench.country=d.address?.country||'Unknown';
+        bench.country_code=(d.address?.country_code||'').toUpperCase();
+        bench.city=d.address?.city||d.address?.town||d.address?.village||d.address?.state||'Unknown';
+      }).catch(()=>{}).finally(()=>{
+        benches.unshift(bench);saveBenches(benches);modal.style.display='none';renderBenchList();
+        if(benchGlobe&&bench.lat)initBenchGlobe(bench.lat,bench.lng);
+      });
+    return;
+  }
   // Save immediately, then enrich with geo data
   benches.unshift(bench);
   saveBenches(benches);
@@ -1906,6 +1925,7 @@ function renderBenches(){
       <div style="background:#1a1917;border:1px solid #2a2826;border-radius:16px;padding:20px;max-width:340px;width:100%">
         <div id="bench-upload-thumbs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px"></div>
         <p id="bench-upload-gps" style="font-size:12px;margin-bottom:4px"></p>
+        <input id="bench-upload-location" class="input" placeholder="Enter location (e.g. Tooting Common, London)" style="display:none;margin-bottom:8px;font-size:13px">
         <p id="bench-upload-date" style="font-size:12px;color:#8a8478;margin-bottom:8px"></p>
         <p style="font-size:11px;color:#6a645a;margin-bottom:12px">Tap a photo to set as main</p>
         <textarea id="bench-upload-caption" class="input" rows="3" placeholder="Add a caption..." style="resize:none;margin-bottom:12px"></textarea>
