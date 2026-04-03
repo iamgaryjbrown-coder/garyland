@@ -838,7 +838,7 @@ function render(){
   else if(S.screen==="loading")renderLoading();
   else if(S.screen==="results")renderResults();
   else if(S.screen==="favourites")renderFavourites();
-  else if(S.screen==="benches")renderBenches();
+  // else if(S.screen==="benches")renderBenches(); // And Pause — disabled for rethink
 }
 
 function renderWelcome(){
@@ -914,7 +914,6 @@ function renderWelcome(){
       <button class="btn" onclick="S.cat='sun';S.results=null;S.searching=false;render()">☀️ Fun in the Sun!</button>
       <button class="btn" onclick="pickCat('pub')">🍻 Pub O'Clock!</button>
       <button class="btn" onclick="pickCat('eat')">🥘 Eat Out!</button>
-      <button class="btn" onclick="openBenches()">🪑 And Pause</button>
       <div style="height:6px"></div>
       <button class="btn" onclick="openSpudChat()" style="border-color:#d4a853;color:#d4a853">🪲 Ask Spud</button>
       ${favCount?`<button class="btn" onclick="openFavourites()">❤️ Favourites <span style="font-size:11px;color:#6a645a">(${favCount})</span></button>`:""}
