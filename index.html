@@ -257,6 +257,8 @@ function loadFavouritesLocal(){try{return JSON.parse(localStorage.getItem('garyl
 function saveFavouritesLocal(favs){try{localStorage.setItem('garyland_favourites',JSON.stringify(favs));}catch(e){}}
 function loadFavourites(){return loadFavouritesLocal();}
 function saveFavourites(favs){
+  // Sanitise broken catIcons on every save
+  favs.forEach(f=>{if(f.catIcon&&/^[\\U]000/i.test(f.catIcon))f.catIcon='\u{1F4CD}';});
   saveFavouritesLocal(favs);
   // Fire-and-forget push to KV
   const t=getToken();
@@ -1132,7 +1134,7 @@ function chatToggleFav(i){
   if(!p)return;
   const idx=favourites.findIndex(f=>f.name===p.name&&f.address===(p.address||''));
   if(idx>=0){favourites.splice(idx,1);}
-  else{favourites.push({name:p.name,address:p.address||'',rating:p.rating,summary:p.summary||'',price_level:p.price_level||'',highlights:p.highlights||[],sun_verdict:p.sun_verdict||'',catIcon:'\U0001f4cd',dateAdded:new Date().toISOString().slice(0,10),lat:null,lng:null});}
+  else{favourites.push({name:p.name,address:p.address||'',rating:p.rating,summary:p.summary||'',price_level:p.price_level||'',highlights:p.highlights||[],sun_verdict:p.sun_verdict||'',catIcon:S.query?.cat?.icon||'\u{1F4CD}',dateAdded:new Date().toISOString().slice(0,10),lat:null,lng:null,searchLocation:S.loc||''});}
   saveFavourites(favourites);
   btn.textContent=isFavourite(p.name,p.address||'')?'\u2665':'\u2661';
 }
