@@ -1430,6 +1430,7 @@ function showFavStreetView(idx){
       wrap.classList.add('active');
       const gbtn=document.getElementById('fav-globe-btn');if(gbtn)gbtn.classList.add('active');
       document.querySelectorAll('.fav-globe-pin').forEach(p=>p.style.display='none');
+      const gDiv=document.getElementById('fav-globe');if(gDiv)gDiv.style.visibility='hidden';
       // Fix Leaflet size after transition
       setTimeout(()=>{if(favLeafletMap)favLeafletMap.invalidateSize();},650);
     });
@@ -1441,6 +1442,7 @@ function showFavGlobe(){
   if(wrap)wrap.classList.remove('active');
   const gbtn=document.getElementById('fav-globe-btn');if(gbtn)gbtn.classList.remove('active');
   document.querySelectorAll('.fav-globe-pin').forEach(p=>p.style.display='');
+  const gDiv=document.getElementById('fav-globe');if(gDiv)gDiv.style.visibility='visible';
   // Clean up Leaflet after fade
   setTimeout(()=>{
     if(favLeafletMap){favLeafletMap.remove();favLeafletMap=null;}
