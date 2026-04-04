@@ -2272,8 +2272,8 @@ async function doSearch(){
   if(GOOGLE_KEY){
     try{ if(!window.google?.maps)await loadMaps(GOOGLE_KEY); }catch(e){}
   }
-  // Geocode typed location if we don't have coords
-  if(!S.userLat&&GOOGLE_KEY){
+  // Always geocode the typed location — GPS may be from a different place
+  if(GOOGLE_KEY){
     try{
       const gc=new google.maps.Geocoder();
       await new Promise(res=>{gc.geocode({address:S.loc},(r,st)=>{if(st==="OK"&&r?.[0]){S.userLat=r[0].geometry.location.lat();S.userLng=r[0].geometry.location.lng();}res();});});
