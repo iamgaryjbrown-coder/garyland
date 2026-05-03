@@ -2710,16 +2710,19 @@ async function doSearch(){
         return await googleTextSearch(foodTypeStr+' restaurant '+q.loc, S.userLat, S.userLng, rM);
       }
       if(cat.id==='pub' || cat.id==='sun_pub'){
-        // Keyword fan-out: 5 keywords. 'inn' catches pub-with-rooms classified as
-        // lodging by Google (e.g. Sloop Inn, Ship Inn). 'tavern' covers older labels.
-        const r = await Promise.all([
-          googleNearbySearch(S.userLat,S.userLng,rM,null,'pub'),
-          googleNearbySearch(S.userLat,S.userLng,rM,null,'bar'),
-          googleNearbySearch(S.userLat,S.userLng,rM,null,'wine bar'),
-          googleNearbySearch(S.userLat,S.userLng,rM,null,'inn'),
-          googleNearbySearch(S.userLat,S.userLng,rM,null,'tavern')
-        ]);
-        return dedupFlatten(r);
+        // Single type='bar' call instead of a 5-keyword fan-out.
+        // Diagnostic at Berea (51.9258,-5.1938) 20km radius confirmed:
+        // - type=bar returned MORE real pubs than the keyword strategy
+        //   (Artramont Arms, Twr y Felin, Grove Hotel, St Davids Cross
+        //   Hotel — all type-tagged 'bar' but names lack pub-keywords,
+        //   so keyword strategy missed them)
+        // - Filters out keyword-noise like Costcutter (matched 'bar'
+        //   keyword via alcohol-section text but lacks type=bar)
+        // - 1 API call vs 5 — 5x cost reduction per tier
+        // 'inn'/'tavern' keywords were a workaround for an assumed
+        // tagging gap that doesn't exist; pub-with-rooms (Sloop Inn,
+        // Ship Inn, etc.) are reliably type-tagged 'bar' by Google.
+        return await googleNearbySearch(S.userLat, S.userLng, rM, 'bar', null);
       }
       const r = await Promise.all([
         googleNearbySearch(S.userLat,S.userLng,rM,'restaurant'),
@@ -2734,13 +2737,16 @@ async function doSearch(){
       let raw = await searchAtRadius(radiusM);
       let actual = radiusM;
 
-      // Tier 2 — escalate to 5km if tier 1 returned <3.
-      // Symmetric with tier-2-to-tier-3 threshold. Catches rural-noise case
-      // where 1-2 hits from oversized hotel/country-house complexes (e.g. Crug
-      // Glas in Pembrokeshire) crowd out genuine pubs that sit just past 1500m.
+      // Tier 2 — escalate to 8km if tier 1 returned <3.
+      // 8km (was 5km) covers rural town clusters that sit at 6-7km from
+      // adjacent hamlets — e.g. St Davids pubs are 7km from Berea, were
+      // unreachable at the previous 5km tier 2. Diagnostic-grounded.
+      // Symmetric with tier-2-to-tier-3 threshold catches the rural-noise
+      // case where 1-2 hits from oversized hotel/country-house complexes
+      // (Crug Glas etc.) crowd out genuine pubs at the next radius up.
       if(raw.length < 3){
-        raw = await searchAtRadius(5000);
-        actual = 5000;
+        raw = await searchAtRadius(8000);
+        actual = 8000;
         // Tier 3 — escalate to 20km if tier 2 returned <3
         if(raw.length < 3){
           raw = await searchAtRadius(20000);
