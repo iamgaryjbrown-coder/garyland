@@ -310,6 +310,10 @@ const BEETLE=`<video autoplay loop muted playsinline style="width:120px;height:1
 let S={
   screen:'location',
   cat:null,prefs:[],loc:"",foodType:null,
+  // locFromGps: true if S.loc/userLat/userLng came from "Use current location";
+  // false if typed (or cleared). Used by doSearch to avoid downgrading precise
+  // GPS coords by re-geocoding the coarse town-name back to a centroid.
+  locFromGps:false,
   userLat:null,userLng:null,
   date:new Date().toISOString().slice(0,10),
   timeIdx:Math.round((new Date().getHours()*60+new Date().getMinutes())/15),
@@ -1077,7 +1081,7 @@ function renderWelcome(){
     app.innerHTML=`<div class="welcome-content">
       <video autoplay loop muted playsinline style="width:200px;height:auto;min-height:108px;margin-bottom:12px" src="garyland-title.mp4"></video>
       <p style="font-size:16px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;margin-bottom:4px">☀️ Fun in the Sun!</p>
-      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;S.locFromGps=false;render()">📍 ${esc(S.loc)} ✎</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn" style="width:100%;padding:14px 0;font-size:15px" onclick="pickCat('sun_pub')">🍺 Pub in the Sun</button>
         <button class="btn" style="width:100%;padding:14px 0;font-size:15px" onclick="pickCat('sun_eat')">🍽️ Restaurant in the Sun</button>
@@ -1104,7 +1108,7 @@ function renderWelcome(){
     app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
       <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat='sun';S.results=null;render()">← Back</button>
       <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">☀️🍺 Pub in the Sun</p>
-      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+      <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;S.locFromGps=false;render()">📍 ${esc(S.loc)} ✎</p>
       <div style="margin-top:8px"><p class="sun-label">☀️ Sun check for</p>
       <input type="date" class="input" value="${S.date}" onchange="S.date=this.value" style="margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px">
@@ -2504,6 +2508,12 @@ function useCurrentLocation(){
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
     S.userLat=lat;S.userLng=lng;
+    // Mark location source as GPS — doSearch reads this to avoid re-geocoding
+    // the coarse reverse-geocoded town-name back to a centroid (which clobbers
+    // the precise GPS coords). Hoisted here so it covers all three S.loc write
+    // paths in the doGeocode() closure below (labeled-locality / no-result
+    // fallback / no-Google-Maps fallback).
+    S.locFromGps=true;
     const doGeocode=()=>{
       if(window.google?.maps){
         const gc=new google.maps.Geocoder();
@@ -2530,7 +2540,7 @@ function useCurrentLocation(){
     alert("Couldn't get location — type it instead");
   },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 }
-function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;S.screen='welcome';render();}else{alert('Enter a location');}}
+function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;S.locFromGps=false;S.screen='welcome';render();}else{alert('Enter a location');}}
 function pickCat(id){S.screen='welcome';S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;S.pageCache={};render();}
 function pickFood(f){S.foodType=f;renderFoodPicker();}
 function renderFoodPicker(){
@@ -2539,7 +2549,7 @@ function renderFoodPicker(){
   app.innerHTML=`<div class="prefs-screen"><div style="width:280px">
     <button class="back-btn" style="display:block;margin-bottom:16px" onclick="S.cat=null;render()">← Back</button>
     <p style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#d4a853;text-align:center;margin-bottom:4px">${cat.icon} ${cat.label}</p>
-    <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;render()">📍 ${esc(S.loc)} ✎</p>
+    <p style="font-size:13px;color:#6a645a;margin-bottom:20px;text-align:center;cursor:pointer" onclick="S.loc='';S.userLat=null;S.userLng=null;S.locFromGps=false;render()">📍 ${esc(S.loc)} ✎</p>
     <p class="label" style="text-align:center;margin-bottom:12px">What are you in the mood for?</p>
     <div class="flex-wrap-tight" style="justify-content:center;margin-bottom:16px">
       ${FOOD_TYPES.map(f=>`<button class="chip ${S.foodType===f?'on':''}" onclick="pickFood('${f}')">${f}</button>`).join("")}
@@ -2604,8 +2614,12 @@ async function doSearch(){
   if(GOOGLE_KEY){
     try{ if(!window.google?.maps)await loadMaps(GOOGLE_KEY); }catch(e){}
   }
-  // Always geocode the typed location — GPS may be from a different place
-  if(GOOGLE_KEY){
+  // Re-geocode the typed location — but NOT when we came from "Use current location".
+  // GPS coords (set in useCurrentLocation) are precise to metres; re-geocoding the coarse
+  // reverse-geocoded town-name (e.g. "Catford") returns the town centroid, which can be
+  // a kilometre or more from where the user actually is. The S.locFromGps flag tracks
+  // whether S.loc came from GPS (true) or typing (false).
+  if(GOOGLE_KEY && !S.locFromGps){
     try{
       const gc=new google.maps.Geocoder();
       await new Promise(res=>{gc.geocode({address:S.loc},(r,st)=>{if(st==="OK"&&r?.[0]){S.userLat=r[0].geometry.location.lat();S.userLng=r[0].geometry.location.lng();}res();});});
