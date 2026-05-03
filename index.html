@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>🪲 GaryLand v19</title>
+<title>🪲 GaryLand v20</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -146,6 +146,35 @@ input[type="range"]{accent-color:#d4a853}
 .fav-remove{background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:#5a5548;flex-shrink:0;transition:color 0.15s}
 .fav-remove:active{color:#e57373}
 .photo-refresh{position:absolute;right:12px;top:12px;width:28px;height:28px;border-radius:50%;background:rgba(26,25,23,0.85);border:1px solid #2a2826;color:#d4a853;font-size:16px;cursor:pointer;z-index:10}
+
+/* ── Cloud-first: offline banner ── */
+.offline-banner{position:fixed;top:0;left:0;right:0;z-index:5000;background:rgba(229,115,115,0.95);color:#1a1917;font-size:12px;font-weight:600;text-align:center;padding:6px 12px;font-family:'DM Sans',sans-serif;padding-top:calc(6px + env(safe-area-inset-top,0px));display:none}
+.offline-banner.show{display:block}
+
+/* ── Cloud-first: toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);z-index:5001;background:#1a1917;color:#e8e2d6;font-size:13px;font-weight:500;padding:10px 18px;border-radius:24px;border:1px solid #2a2826;box-shadow:0 4px 16px rgba(0,0,0,0.5);font-family:'DM Sans',sans-serif;opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;max-width:90vw;text-align:center;margin-bottom:env(safe-area-inset-bottom,0px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{border-color:#e57373;color:#e57373}
+.toast.success{border-color:#2dd4bf;color:#2dd4bf}
+
+/* ── Cloud-first: pending bench state ── */
+.bench-pending{opacity:0.55;transition:opacity 0.3s}
+.bench-pending .photo-strip img{filter:grayscale(0.4)}
+.bench-pending-spinner{position:absolute;top:8px;right:8px;width:14px;height:14px;border:2px solid rgba(212,168,83,0.3);border-top-color:#d4a853;border-radius:50%;animation:bench-spin 0.8s linear infinite;z-index:5}
+@keyframes bench-spin{to{transform:rotate(360deg)}}
+.bench-pin-pending{animation:bench-pin-pulse 1.4s ease-in-out infinite}
+@keyframes bench-pin-pulse{0%,100%{opacity:0.55;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+.bench-removing{opacity:0!important;transition:opacity 0.3s}
+
+/* ── Cloud-first: empty-cache error screen ── */
+.boot-error{position:fixed;inset:0;z-index:6000;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
+.boot-error h2{font-family:'Fraunces',serif;color:#d4a853;font-size:20px;margin-bottom:12px}
+.boot-error p{color:#8a8478;font-size:14px;margin-bottom:24px;line-height:1.5;max-width:300px}
+.boot-spinner{width:32px;height:32px;border:3px solid rgba(212,168,83,0.2);border-top-color:#d4a853;border-radius:50%;animation:bench-spin 0.8s linear infinite;margin-bottom:20px}
+
+/* ── Cloud-first: sync button ── */
+.sync-btn{position:absolute;top:calc(env(safe-area-inset-top,12px) + 8px);right:12px;z-index:20;background:rgba(26,25,23,0.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid #2a2826;color:#d4a853;font-size:18px;padding:6px 10px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;line-height:1}
+.sync-btn:active{background:rgba(212,168,83,0.15)}
 </style>
 </head>
 <body>
@@ -158,6 +187,58 @@ const WORKER_URL = "https://garyland-api.garyland.workers.dev";
 const GOOGLE_KEY = "AIzaSyCTUs24auwcikig1MDHuJFcPAKRUj3WajQ";
 
 // ── Spud Personality lives in SOUL.md on the VPS — do not duplicate here ──
+
+// ═══════════════════════════════════════
+// Cloud-first storage layer
+// kvFetch: every KV-touching call goes through this. It is the
+// SINGLE POINT OF TRUTH for the kvOnline flag and the offline banner.
+// Any direct fetch() to WORKER_URL/favourites|/benches|/sync would
+// bypass the offline detection — don't add any.
+// ═══════════════════════════════════════
+let kvOnline = true;
+async function kvFetch(path, opts){
+  const url = path.startsWith('http') ? path : (WORKER_URL + path);
+  try{
+    const r = await fetch(url, opts);
+    // 2xx OK; 4xx (except 408 timeout) = application error, network is fine
+    if(r.ok || (r.status >= 400 && r.status < 500 && r.status !== 408)){
+      if(!kvOnline){ kvOnline = true; updateOfflineBanner(); }
+      return r;
+    }
+    // 5xx or 408 → treat as offline
+    throw new Error('worker_unreachable_' + r.status);
+  } catch(e){
+    if(kvOnline){ kvOnline = false; updateOfflineBanner(); }
+    throw e;
+  }
+}
+
+function updateOfflineBanner(){
+  let b = document.getElementById('offline-banner');
+  if(!b){
+    b = document.createElement('div');
+    b.id = 'offline-banner';
+    b.className = 'offline-banner';
+    b.textContent = "Offline — changes won't save until reconnected";
+    document.body.appendChild(b);
+  }
+  b.classList.toggle('show', !kvOnline);
+}
+
+let toastTimer = null;
+function toast(msg, kind){
+  let t = document.getElementById('app-toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'app-toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.className = 'toast ' + (kind || '') + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.classList.remove('show'); }, 4000);
+}
 
 // ── Dynamic Leaflet Loader ──
 let leafletReady=false,leafletPromise=null;
@@ -247,7 +328,10 @@ function saveSpudChat(msgs){try{localStorage.setItem('garyland_spud_chat',JSON.s
 let spudChatHistory=loadSpudChat();
 let spudSessionStart=0;
 
-// ── Favourites: localStorage + Cloudflare KV sync ──
+// ═══════════════════════════════════════
+// Cloud-first storage: KV is truth, localStorage is render cache only
+// Cache is written ONLY after a successful KV PUT, so cache ≡ KV always
+// ═══════════════════════════════════════
 function getToken(){
   let t=localStorage.getItem('garyland_token');
   if(!t){t=crypto.randomUUID();localStorage.setItem('garyland_token',t);}
@@ -255,68 +339,197 @@ function getToken(){
 }
 function loadFavouritesLocal(){try{return JSON.parse(localStorage.getItem('garyland_favourites'))||[];}catch(e){return[];}}
 function saveFavouritesLocal(favs){try{localStorage.setItem('garyland_favourites',JSON.stringify(favs));}catch(e){}}
-function loadFavourites(){return loadFavouritesLocal();}
-function saveFavourites(favs){
-  // Sanitise broken catIcons on every save
-  favs.forEach(f=>{if(f.catIcon&&/^[\\U]000/i.test(f.catIcon))f.catIcon='\u{1F4CD}';});
-  saveFavouritesLocal(favs);
-  // Fire-and-forget push to KV
-  const t=getToken();
-  fetch(WORKER_URL+'/favourites',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t,data:favs})}).catch(()=>{});
-}
-let favourites=loadFavourites();
+function loadBenchesLocal(){try{return JSON.parse(localStorage.getItem('garyland_benches'))||[];}catch(e){return[];}}
+function saveBenchesLocal(b){try{localStorage.setItem('garyland_benches',JSON.stringify(b));}catch(e){}}
 
-// Async KV sync on load — merge server data with local
-(async function syncFavsFromKV(){
-  try{
-    const t=getToken();
-    const r=await fetch(WORKER_URL+'/favourites?token='+encodeURIComponent(t));
-    const d=await r.json();
-    const server=d.data||[];
-    if(!server.length&&favourites.length){
-      // Server empty, push local up
-      saveFavourites(favourites);return;
-    }
-    if(!server.length)return;
-    // Merge: add any server items not in local
-    let changed=false;
-    server.forEach(s=>{
-      if(!favourites.find(f=>f.name===s.name&&f.address===s.address)){
-        favourites.push(s);changed=true;
-      }
+// Match keys for migration orphan detection
+// Primary: lat+lng rounded to 5dp (~1m precision)
+// Fallback: lowercased name (favs) or name+dateAdded (benches)
+function favKey(f){
+  if(f.lat && f.lng) return 'geo:' + Number(f.lat).toFixed(5) + ',' + Number(f.lng).toFixed(5);
+  return 'name:' + (f.name||'').toLowerCase().trim();
+}
+function benchKey(b){
+  if(b.lat && b.lng) return 'geo:' + Number(b.lat).toFixed(5) + ',' + Number(b.lng).toFixed(5);
+  return 'name:' + (b.name||'').toLowerCase().trim() + '|' + (b.dateAdded||'');
+}
+
+function _sanitiseFavs(favs){
+  favs.forEach(f=>{if(f.catIcon&&/^[\\U]000/i.test(f.catIcon))f.catIcon='\u{1F4CD}';});
+  return favs;
+}
+
+let favourites = _sanitiseFavs(loadFavouritesLocal());
+let benches = loadBenchesLocal();
+
+// Push helpers: caller does optimistic in-memory update first,
+// these write to KV and update cache only on success.
+// Caller is responsible for rollback on failure.
+async function pushFavouritesToKV(){
+  const t = getToken();
+  const r = await kvFetch('/favourites', {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({token:t, data:favourites})
+  });
+  if(!r.ok) throw new Error('fav_put_failed_' + r.status);
+  saveFavouritesLocal(favourites);
+}
+async function pushBenchesToKV(){
+  const t = getToken();
+  // Strip _pending flag from data sent to KV (preserve order)
+  const cleaned = benches.map(b=>{const c={...b}; delete c._pending; return c;});
+  const r = await kvFetch('/benches', {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({token:t, data:cleaned})
+  });
+  if(!r.ok) throw new Error('bench_put_failed_' + r.status);
+  saveBenchesLocal(cleaned);
+}
+
+// One-shot migration on first boot of cloud-first code
+async function runMigration(kvFavs, kvBenches){
+  const localFavs = loadFavouritesLocal();
+  const localBenches = loadBenchesLocal();
+  const t = getToken();
+  let did = {favs:0, benches:0};
+
+  const kvFavKeys = new Set(kvFavs.map(favKey));
+  const orphanedFavs = localFavs.filter(f => !kvFavKeys.has(favKey(f)));
+  if(orphanedFavs.length){
+    const merged = [...kvFavs, ...orphanedFavs];
+    await kvFetch('/favourites', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({token:t, data:merged})
     });
-    // Also add any local items not on server
-    const merged=[...favourites];
-    if(changed){saveFavouritesLocal(favourites);}
-    // Push merged set to server
-    saveFavourites(favourites);
-    // Re-render if favourites screen is showing
-    if(S.screen==='favourites'){renderFavList();if(favGlobe)addFavMarkers();}
-  }catch(e){}
-})();
-// Migrate old catIcons
-(function(){let c=false;favourites.forEach(f=>{if(f.catIcon&&/^U000/i.test(f.catIcon)){f.catIcon='\u{1F4CD}';c=true;}});if(c)saveFavourites(favourites);})();
+    did.favs = orphanedFavs.length;
+  }
+
+  const kvBenchKeys = new Set(kvBenches.map(benchKey));
+  const orphanedBenches = localBenches.filter(b => !kvBenchKeys.has(benchKey(b)));
+  if(orphanedBenches.length){
+    const merged = [...kvBenches, ...orphanedBenches];
+    await kvFetch('/benches', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({token:t, data:merged})
+    });
+    did.benches = orphanedBenches.length;
+  }
+
+  console.log('[gl] migration: pushed ' + did.favs + ' fav orphans, ' + did.benches + ' bench orphans');
+  return did;
+}
+
+// Boot from KV — show cache immediately, fetch + replace in background
+async function bootFromKV(){
+  hideBootError();
+  const t = getToken();
+  try{
+    const [favsR, benchesR] = await Promise.all([
+      kvFetch('/favourites?token=' + encodeURIComponent(t)),
+      kvFetch('/benches?token=' + encodeURIComponent(t))
+    ]);
+    let kvFavs = (await favsR.json()).data || [];
+    let kvBenches = (await benchesR.json()).data || [];
+
+    if(localStorage.getItem('garyland_migrated_v2') !== '1'){
+      const did = await runMigration(kvFavs, kvBenches);
+      if(did.favs || did.benches){
+        // Re-fetch canonical state after migration
+        const [r1, r2] = await Promise.all([
+          kvFetch('/favourites?token=' + encodeURIComponent(t)),
+          kvFetch('/benches?token=' + encodeURIComponent(t))
+        ]);
+        kvFavs = (await r1.json()).data || [];
+        kvBenches = (await r2.json()).data || [];
+      }
+      localStorage.setItem('garyland_migrated_v2', '1');
+    }
+
+    favourites = _sanitiseFavs(kvFavs);
+    benches = kvBenches;
+    saveFavouritesLocal(favourites);
+    saveBenchesLocal(benches);
+
+    // Re-render any active screen that depends on this state
+    if(S.screen === 'favourites'){renderFavList(); if(favGlobe) addFavMarkers();}
+    if(S.screen === 'benches'){
+      renderBenchList();
+      if(typeof benchGlobe !== 'undefined' && benchGlobe){
+        initBenchGlobe(S.userLat||51.5, S.userLng||-0.12);
+      }
+    }
+  } catch(e){
+    // KV unreachable. If cache is empty too, show fatal screen.
+    const cacheEmpty = favourites.length === 0 && benches.length === 0;
+    if(cacheEmpty){
+      showBootError();
+    }
+    // else: keep cache shown, banner already up via kvFetch
+  }
+}
+
+function showBootError(){
+  let e = document.getElementById('boot-error');
+  if(!e){
+    e = document.createElement('div');
+    e.id = 'boot-error';
+    e.className = 'boot-error';
+    e.innerHTML = '<h2>Couldn’t reach GaryLand</h2><p>Check your connection and try again.</p><button class="btn active" style="min-width:140px" onclick="bootFromKV()">Retry</button>';
+    document.body.appendChild(e);
+  }
+}
+function hideBootError(){
+  const e = document.getElementById('boot-error');
+  if(e) e.remove();
+}
 
 function isFavourite(name,address){return favourites.some(f=>f.name===name&&f.address===address);}
-function toggleFavourite(i){
+
+async function toggleFavourite(i){
   const p=S.results.places[i];if(!p)return;
+  const snapshot = favourites.slice();
   const idx=favourites.findIndex(f=>f.name===p.name&&f.address===p.address);
-  if(idx>=0){favourites.splice(idx,1);}
-  else{
+  if(idx>=0){
+    favourites.splice(idx,1);
+  } else {
     const c=cardCoords[i];
-    favourites.push({name:p.name,address:p.address,rating:p.rating,summary:p.summary,price_level:p.price_level,highlights:p.highlights||[],sun_verdict:p.sun_verdict||"",catIcon:S.query?.cat?.icon||"📍",dateAdded:new Date().toISOString().slice(0,10),lat:c?.lat||null,lng:c?.lng||null,searchLocation:S.loc||""});
+    favourites.push({
+      name:p.name, address:p.address, place_id:p.place_id||null,
+      rating:p.rating, summary:p.summary, price_level:p.price_level,
+      highlights:p.highlights||[], sun_verdict:p.sun_verdict||"",
+      catIcon:S.query?.cat?.icon||"\u{1F4CD}",
+      dateAdded:new Date().toISOString().slice(0,10),
+      lat:c?.lat||null, lng:c?.lng||null, searchLocation:S.loc||""
+    });
   }
-  saveFavourites(favourites);
-  // Update just the heart button without re-rendering entire results
+  // Optimistic UI update
   const btn=document.getElementById('fav-'+i);
   if(btn)btn.textContent=isFavourite(p.name,p.address)?'♥':'♡';
+  // KV write — rollback on failure
+  try{
+    await pushFavouritesToKV();
+  } catch(e){
+    favourites = snapshot;
+    if(btn)btn.textContent=isFavourite(p.name,p.address)?'♥':'♡';
+    toast("Couldn’t save — try again", 'error');
+  }
 }
-function removeFavourite(idx){
+
+async function removeFavourite(idx){
   if(!confirm('Remove from favourites?'))return;
+  const snapshot = favourites.slice();
   favourites.splice(idx,1);
-  saveFavourites(favourites);
+  // Optimistic re-render
   if(S.screen==='favourites'){renderFavList();addFavMarkers();}
   else renderFavourites();
+  try{
+    await pushFavouritesToKV();
+  } catch(e){
+    favourites = snapshot;
+    if(S.screen==='favourites'){renderFavList();addFavMarkers();}
+    else renderFavourites();
+    toast("Couldn’t remove — try again", 'error');
+  }
 }
 const app=document.getElementById("app");
 const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -477,7 +690,7 @@ function getPhotosAndGeometry(name,addr){
   });
 }
 // ── Google Places Nearby Search ──
-const CAT_TYPE={sun_pub:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant"}; // legacy fallback
+const CAT_TYPE={sun_pub:"bar",sun_eat:"restaurant",pub:"bar",eat:"restaurant"}; // fallback for Google Places type lookup
 function parseRange(r,def){return r==="500m"?500:r==="1km"?1000:r==="2km"?2000:r==="5km"?5000:(def||1500);}
 function googleNearbySearch(lat,lng,radiusM,type,keyword){
   return new Promise(res=>{
@@ -833,8 +1046,7 @@ function updateAllShadowMaps(){
 // Render
 // ═══════════════════════════════════════
 function render(){
-  if(S.screen==="location")renderWelcome();
-  else if(S.screen==="welcome")renderWelcome();
+  if(S.screen==="location"||S.screen==="welcome")renderWelcome();
   else if(S.screen==="loading")renderLoading();
   else if(S.screen==="results")renderResults();
   else if(S.screen==="favourites")renderFavourites();
@@ -848,8 +1060,9 @@ function renderWelcome(){
   // ── Screen 1: Opening/location screen — always shown on launch ──
   if(S.screen==='location'||!hasLoc){
     app.innerHTML=`<div class="welcome-content">
+      <button class="sync-btn" onclick="showSyncModal()" title="Sync devices">\u{1F517}</button>
       <video autoplay loop muted playsinline style="width:260px;height:auto;min-height:140px;margin-bottom:16px" src="garyland-title.mp4"></video>
-      <p style="font-size:9px;color:#333;margin-bottom:20px">v19</p>
+      <p style="font-size:10px;color:#8a8478;margin-bottom:20px">v20</p>
       <div style="width:280px;display:flex;flex-direction:column;gap:10px">
         <button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="useCurrentLocation()">📍 Use current location</button>
         <input class="input" id="li" placeholder="Somewhere else..." style="width:100%" onkeydown="if(event.key==='Enter')setLocFromInput()">
@@ -904,8 +1117,9 @@ function renderWelcome(){
 
   // ── Main menu (has location) ──
   app.innerHTML=`<div class="welcome-content">
+    <button class="sync-btn" onclick="showSyncModal()" title="Sync devices">\u{1F517}</button>
     <video autoplay loop muted playsinline style="width:200px;height:auto;min-height:108px;margin-bottom:8px" src="garyland-title.mp4"></video>
-    <p style="font-size:9px;color:#333;margin-bottom:6px">v19</p>
+    <p style="font-size:10px;color:#8a8478;margin-bottom:6px">v20</p>
     <div style="margin-bottom:20px;text-align:center">
       <p style="font-size:11px;color:#5a5548;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px">Searching</p>
       <p style="font-size:18px;color:#d4a853;font-family:'Fraunces',serif;font-weight:700;cursor:pointer" onclick="S.screen='location';render()">📍 ${esc(S.loc)} <span style="font-size:13px;color:#5a5548">✎</span></p>
@@ -1130,16 +1344,24 @@ function loadChatPhotos(idx,name,addr,placeId){
     el.innerHTML=result.photos.map((u,j)=>`<img src="${u}" alt="photo" loading="lazy" onclick="openLightbox('c'+${idx},${j})">`).join("");
   }).catch(()=>{const el=document.getElementById("cph-"+idx);if(el)el.style.display="none";});
 }
-function chatToggleFav(i){
+async function chatToggleFav(i){
   const btn=document.getElementById("cfav-"+i);if(!btn)return;
   const card=btn.closest('.card');if(!card)return;
   let p;try{p=JSON.parse(decodeURIComponent(card.dataset.place||''));}catch(e){p=chatPlaces[i];}
   if(!p)return;
+  const snapshot=favourites.slice();
   const idx=favourites.findIndex(f=>f.name===p.name&&f.address===(p.address||''));
   if(idx>=0){favourites.splice(idx,1);}
-  else{favourites.push({name:p.name,address:p.address||'',rating:p.rating,summary:p.summary||'',price_level:p.price_level||'',highlights:p.highlights||[],sun_verdict:p.sun_verdict||'',catIcon:S.query?.cat?.icon||'\u{1F4CD}',dateAdded:new Date().toISOString().slice(0,10),lat:null,lng:null,searchLocation:S.loc||''});}
-  saveFavourites(favourites);
+  else{favourites.push({name:p.name,address:p.address||'',place_id:p.place_id||null,rating:p.rating,summary:p.summary||'',price_level:p.price_level||'',highlights:p.highlights||[],sun_verdict:p.sun_verdict||'',catIcon:S.query?.cat?.icon||'\u{1F4CD}',dateAdded:new Date().toISOString().slice(0,10),lat:null,lng:null,searchLocation:S.loc||''});}
+  // Optimistic UI
   btn.textContent=isFavourite(p.name,p.address||'')?'\u2665':'\u2661';
+  try{
+    await pushFavouritesToKV();
+  } catch(e){
+    favourites=snapshot;
+    btn.textContent=isFavourite(p.name,p.address||'')?'\u2665':'\u2661';
+    toast("Couldn\u2019t save \u2014 try again",'error');
+  }
 }
 let chatVenueOffset=0; // Track index offset for multiple venue blocks in history
 let lastVenueBlockStart=null; // Track start of most recent venue block for scrolling
@@ -1255,13 +1477,9 @@ function countryFlag(code){
 }
 
 // Migrate old favourites: fix broken catIcon text like "U0001f4cd"
-(function migrateFavs(){
-  let changed=false;
-  favourites.forEach(f=>{
-    if(f.catIcon&&/^U000/i.test(f.catIcon)){f.catIcon='\u{1F4CD}';changed=true;}
-  });
-  if(changed)saveFavourites(favourites);
-})();
+// catIcon sanitisation now lives in _sanitiseFavs (top cloud-first block);
+// runs on every load (boot, link, etc.). pushFavouritesToKV will persist
+// any cleanup the next time a fav is added/removed.
 
 function groupFavsByLocation(){
   const groups={};
@@ -1334,7 +1552,10 @@ async function enrichFavGeoProgressive(){
       await new Promise(r=>setTimeout(r,1100));
     }
   }
-  if(changed)saveFavourites(favourites);
+  if(changed){
+    // Best-effort persistence — geocode enrichment is non-critical, no toast on failure
+    pushFavouritesToKV().catch(()=>{});
+  }
   favEnriching=false;
 }
 
@@ -1344,19 +1565,7 @@ function renderFavourites(){
   const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;
   app.innerHTML=`<div class="favs-screen">
     <button class="favs-back-btn" onclick="closeFavourites()">\u2190 Back</button>
-    <div id="sync-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;padding:20px">
-      <div style="background:#1a1917;border:1px solid #2a2826;border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center">
-        <h3 style="font-family:'Fraunces',serif;color:#d4a853;font-size:18px;margin-bottom:16px">\u{1F517} Sync Devices</h3>
-        <p style="font-size:13px;color:#8a8478;margin-bottom:16px">Share this code with your other device.<br>Valid for 10 minutes.</p>
-        <div id="sync-code" style="font-family:monospace;font-size:32px;letter-spacing:6px;color:#2dd4bf;margin-bottom:20px">------</div>
-        <div style="height:1px;background:#2a2826;margin:16px 0"></div>
-        <p style="font-size:13px;color:#8a8478;margin-bottom:12px">Or enter a code from another device:</p>
-        <input id="sync-input" class="input" maxlength="6" placeholder="Enter code" style="text-align:center;font-size:20px;letter-spacing:4px;text-transform:uppercase">
-        <button class="btn active" style="width:100%;margin-top:12px" onclick="linkDevice()">Link</button>
-        <button class="btn" style="width:100%;margin-top:8px" onclick="closeSyncModal()">Cancel</button>
-        <p id="sync-status" style="font-size:12px;color:#e57373;margin-top:8px;min-height:16px"></p>
-      </div>
-    </div>
+    <button class="sync-btn" onclick="showSyncModal()" title="Sync devices">\u{1F517}</button>
     <div class="favs-globe-wrap">
       <div id="fav-globe" style="width:100%;height:100%"></div>
       <div class="favs-leaflet-wrap" id="fav-leaflet"></div>
@@ -1661,36 +1870,117 @@ function showFavGlobe(){
   }
 }
 
-async function showSyncModal(){
-  const modal=document.getElementById('sync-modal');if(!modal)return;
-  modal.style.display='flex';
-  document.getElementById('sync-status').textContent='';
-  document.getElementById('sync-input').value='';
-  // Generate code
-  try{
-    const r=await fetch(WORKER_URL+'/sync/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:getToken()})});
-    const d=await r.json();
-    document.getElementById('sync-code').textContent=d.code||'ERROR';
-  }catch(e){document.getElementById('sync-code').textContent='OFFLINE';}
+// Top-level sync modal — lazy-mounted to <body> on first open
+function ensureSyncModal(){
+  let m = document.getElementById('sync-modal');
+  if(m) return m;
+  m = document.createElement('div');
+  m.id = 'sync-modal';
+  m.style.cssText = 'display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = `
+    <div style="background:#1a1917;border:1px solid #2a2826;border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center">
+      <h3 style="font-family:'Fraunces',serif;color:#d4a853;font-size:18px;margin-bottom:16px">\u{1F517} Sync Devices</h3>
+      <p style="font-size:13px;color:#8a8478;margin-bottom:16px">Share this code with your other device.<br>Valid for 10 minutes.</p>
+      <div id="sync-code" style="font-family:monospace;font-size:32px;letter-spacing:6px;color:#2dd4bf;margin-bottom:20px">------</div>
+      <div style="height:1px;background:#2a2826;margin:16px 0"></div>
+      <p style="font-size:13px;color:#8a8478;margin-bottom:12px">Or enter a code from another device:</p>
+      <input id="sync-input" class="input" maxlength="6" placeholder="Enter code" style="text-align:center;font-size:20px;letter-spacing:4px;text-transform:uppercase">
+      <button class="btn active" style="width:100%;margin-top:12px" onclick="linkDevice()">Link</button>
+      <button class="btn" style="width:100%;margin-top:8px" onclick="closeSyncModal()">Cancel</button>
+      <p id="sync-status" style="font-size:12px;color:#e57373;margin-top:8px;min-height:16px"></p>
+      <div style="height:1px;background:#2a2826;margin:16px 0"></div>
+      <button class="btn" style="width:100%;color:#8a8478;font-size:11px" onclick="unlinkDevice()">Sign out of this device</button>
+    </div>`;
+  document.body.appendChild(m);
+  return m;
 }
-function closeSyncModal(){const m=document.getElementById('sync-modal');if(m)m.style.display='none';}
-async function linkDevice(){
-  const code=document.getElementById('sync-input')?.value?.trim();
-  if(!code||code.length<6){document.getElementById('sync-status').textContent='Enter a 6-character code';return;}
-  document.getElementById('sync-status').textContent='Linking...';
+
+async function showSyncModal(){
+  const modal = ensureSyncModal();
+  modal.style.display = 'flex';
+  document.getElementById('sync-status').textContent = '';
+  document.getElementById('sync-input').value = '';
+  document.getElementById('sync-code').textContent = '------';
+  // Generate code via worker
   try{
-    const r=await fetch(WORKER_URL+'/sync/link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
-    const d=await r.json();
-    if(d.error){document.getElementById('sync-status').textContent=d.error;return;}
-    // Save new token + pull favourites
-    localStorage.setItem('garyland_token',d.token);
-    const fr=await fetch(WORKER_URL+'/favourites?token='+encodeURIComponent(d.token));
-    const fd=await fr.json();
-    if(fd.data?.length){favourites=fd.data;saveFavouritesLocal(favourites);}
+    const r = await kvFetch('/sync/create', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({token: getToken()})
+    });
+    const d = await r.json();
+    document.getElementById('sync-code').textContent = d.code || 'ERROR';
+  } catch(e){
+    document.getElementById('sync-code').textContent = 'OFFLINE';
+  }
+}
+
+function closeSyncModal(){
+  const m = document.getElementById('sync-modal');
+  if(m) m.style.display = 'none';
+}
+
+async function linkDevice(){
+  const code = document.getElementById('sync-input')?.value?.trim().toUpperCase();
+  const statusEl = document.getElementById('sync-status');
+  if(!code || code.length !== 6){statusEl.textContent = 'Enter a 6-character code'; return;}
+  statusEl.textContent = 'Linking...';
+  try{
+    const r = await kvFetch('/sync/link', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({code})
+    });
+    const d = await r.json();
+    if(d.error){statusEl.textContent = d.error; return;}
+    const newToken = d.token;
+    if(!newToken){statusEl.textContent = 'No token returned'; return;}
+
+    // Confirmation prompt: warn if this device's current KV slot has any data
+    const hasData = favourites.length > 0 || benches.length > 0;
+    if(hasData){
+      const ok = confirm(
+        'This device currently has ' + favourites.length + ' favourite' + (favourites.length===1?'':'s') +
+        ' and ' + benches.length + ' bench' + (benches.length===1?'':'es') + '.\n\n' +
+        'Linking will replace them with data from the other device. Continue?'
+      );
+      if(!ok){statusEl.textContent = ''; return;}
+    }
+
+    // Replace token + clear migration flag (so the new token's data is treated as canonical)
+    localStorage.setItem('garyland_token', newToken);
+    localStorage.setItem('garyland_migrated_v2', '1'); // skip migration on the new token
+
+    // Fetch both favs and benches for the new token
+    const [fr, br] = await Promise.all([
+      kvFetch('/favourites?token=' + encodeURIComponent(newToken)),
+      kvFetch('/benches?token=' + encodeURIComponent(newToken))
+    ]);
+    const fd = await fr.json();
+    const bd = await br.json();
+    favourites = _sanitiseFavs(fd.data || []);
+    benches = bd.data || [];
+    saveFavouritesLocal(favourites);
+    saveBenchesLocal(benches);
+
     closeSyncModal();
-    renderFavList();if(favGlobe)addFavMarkers();
-    document.getElementById('sync-status').textContent='';
-  }catch(e){document.getElementById('sync-status').textContent='Connection failed';}
+    toast('Linked — your data is now in sync', 'success');
+
+    // Re-render whatever's active
+    if(S.screen === 'favourites'){renderFavList(); if(favGlobe) addFavMarkers();}
+    else if(S.screen === 'benches'){
+      renderBenchList();
+      if(benchGlobe) initBenchGlobe(S.userLat||51.5, S.userLng||-0.12);
+    }
+    else render();
+  } catch(e){
+    statusEl.textContent = 'Connection failed';
+  }
+}
+
+function unlinkDevice(){
+  if(!confirm('This will clear GaryLand data from this device. Your data on the cloud is safe. Continue?')) return;
+  // Wipe everything except spud chat (cosmetic, not part of cloud-first)
+  ['garyland_token','garyland_favourites','garyland_benches','garyland_migrated_v2'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
 }
 
 function openFavChat(idx){
@@ -1714,11 +2004,8 @@ function openFavLightbox(card,idx){
 
 // ═══════════════════════════════════════
 // And Pause — Benches
+// (Storage helpers + `let benches` live in the cloud-first block at the top)
 // ═══════════════════════════════════════
-function loadBenchesLocal(){try{return JSON.parse(localStorage.getItem('garyland_benches'))||[];}catch(e){return[];}}
-function saveBenchesLocal(b){try{localStorage.setItem('garyland_benches',JSON.stringify(b));}catch(e){}}
-function saveBenches(b){saveBenchesLocal(b);const t=getToken();fetch(WORKER_URL+'/benches',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t,data:b})}).catch(()=>{});}
-let benches=loadBenchesLocal();
 
 // EXIF GPS reader (lightweight, inline)
 function readExifGps(file){
@@ -1858,7 +2145,7 @@ function setBenchMain(i){
   [...thumbs.children].forEach((img,j)=>img.style.border=j===i?'2px solid #2dd4bf':'2px solid #2a2826');
 }
 
-function saveBenchFromUpload(){
+async function saveBenchFromUpload(){
   const modal=document.getElementById('bench-upload-modal');if(!modal)return;
   const lat=parseFloat(modal.dataset.lat)||null;
   const lng=parseFloat(modal.dataset.lng)||null;
@@ -1867,27 +2154,57 @@ function saveBenchFromUpload(){
     caption:document.getElementById('bench-upload-caption').value.trim().slice(0,300),
     lat,lng,
     photos:[benchUploadPhotos[benchUploadMain],...benchUploadPhotos.filter((_,i)=>i!==benchUploadMain)],
-    dateAdded:modal.dataset.date
+    dateAdded:modal.dataset.date,
+    _pending:true
   };
   // Pin-drop coordinates may have been set via map tap
   const pinLat=parseFloat(modal.dataset.lat)||null;
   const pinLng=parseFloat(modal.dataset.lng)||null;
   if(pinLat){bench.lat=pinLat;bench.lng=pinLng;}
-  // Save immediately, then enrich with geo data
+
+  // Optimistic insert with pending state
   benches.unshift(bench);
-  saveBenches(benches);
   modal.style.display='none';
   renderBenchList();
-  if(benchGlobe&&lat&&lng)initBenchGlobe(lat,lng);
-  // Async geocode — updates the already-saved bench
-  if(lat&&lng){
-    fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&zoom=10',{headers:{'User-Agent':'GaryLand/1.0'}})
+  if(benchGlobe&&bench.lat&&bench.lng)initBenchGlobe(bench.lat,bench.lng);
+
+  // Async geocode in parallel with KV write — update fields if both succeed
+  let geoPromise = Promise.resolve();
+  if(bench.lat&&bench.lng){
+    geoPromise = fetch('https://nominatim.openstreetmap.org/reverse?lat='+bench.lat+'&lon='+bench.lng+'&format=json&zoom=10',{headers:{'User-Agent':'GaryLand/1.0'}})
       .then(r=>r.json()).then(d=>{
         bench.country=d.address?.country||'Unknown';
         bench.country_code=(d.address?.country_code||'').toUpperCase();
         bench.city=d.address?.city||d.address?.town||d.address?.village||d.address?.state||'Unknown';
-        saveBenches(benches);renderBenchList();
       }).catch(()=>{});
+  }
+
+  // Wait for geocode (best-effort), then PUT to KV
+  await geoPromise;
+  try{
+    await pushBenchesToKV();
+    // Success: clear pending flag, re-render to remove pulse/dim
+    bench._pending = false;
+    renderBenchList();
+  } catch(e){
+    // Fade out + remove + toast
+    const idx = benches.indexOf(bench);
+    if(idx >= 0){
+      // Animate out
+      const el = document.getElementById('bench-item-' + idx);
+      if(el) el.classList.add('bench-removing');
+      setTimeout(()=>{
+        const stillIdx = benches.indexOf(bench);
+        if(stillIdx >= 0) benches.splice(stillIdx, 1);
+        renderBenchList();
+        if(benchGlobe){
+          const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;
+          initBenchGlobe(cLat,cLng);
+        }
+      }, 300);
+    }
+    toast("Couldn’t save bench — try again", 'error');
+    // Photos retained in benchUploadPhotos so user can retry
   }
 }
 
@@ -1897,10 +2214,21 @@ function openBenchLightbox(benchIdx,photoIdx){
   lbCard='bench_'+benchIdx;lbIdx=photoIdx;renderLightbox();
 }
 
-function removeBench(idx){
+async function removeBench(idx){
   if(!confirm('Remove this bench?'))return;
-  benches.splice(idx,1);saveBenches(benches);renderBenchList();
+  const snapshot = benches.slice();
+  benches.splice(idx,1);
+  // Optimistic re-render
+  renderBenchList();
   if(benchGlobe){const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;initBenchGlobe(cLat,cLng);}
+  try{
+    await pushBenchesToKV();
+  } catch(e){
+    benches = snapshot;
+    renderBenchList();
+    if(benchGlobe){const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;initBenchGlobe(cLat,cLng);}
+    toast("Couldn’t remove — try again", 'error');
+  }
 }
 
 let benchGlobe=null,benchLeafletMap=null,benchMarkers=[],benchGeoCache={},benchEnriching=false;
@@ -1924,7 +2252,8 @@ function renderBenches(){
   const cLat=S.userLat||51.5,cLng=S.userLng||-0.12;
   app.innerHTML=`<div class="favs-screen">
     <button class="favs-back-btn" onclick="closeBenches()">\u2190 Back</button>
-    <button class="favs-back-btn" style="left:auto;right:12px;color:#d4a853;border-color:#d4a853" onclick="document.getElementById('bench-file-input').click()">+ Add</button>
+    <button class="favs-back-btn" style="left:auto;right:64px;color:#d4a853;border-color:#d4a853" onclick="document.getElementById('bench-file-input').click()">+ Add</button>
+    <button class="sync-btn" onclick="showSyncModal()" title="Sync devices">\u{1F517}</button>
     <input type="file" id="bench-file-input" accept="image/*" multiple style="display:none" onchange="handleBenchUpload(this)">
     <div id="bench-upload-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;padding:20px;overflow-y:auto">
       <div style="background:#1a1917;border:1px solid #2a2826;border-radius:16px;padding:20px;max-width:340px;width:100%">
@@ -2039,7 +2368,10 @@ function renderBenchList(){
       h+=`<div class="fav-city-header">${esc(city)}</div>`;
       g.cities[city].forEach(b=>{
         const i=b._idx;
-        h+=`<div class="card" id="bench-item-${i}" onclick="flyToBench(${i})" style="margin:8px 10px;cursor:pointer">
+        const pendingCls = b._pending ? ' bench-pending' : '';
+        const pendingSpinner = b._pending ? '<div class="bench-pending-spinner"></div>' : '';
+        h+=`<div class="card${pendingCls}" id="bench-item-${i}" onclick="flyToBench(${i})" style="margin:8px 10px;cursor:pointer;position:relative">
+          ${pendingSpinner}
           <div style="display:flex;justify-content:flex-end;padding:8px 10px 0"><button class="fav-remove" onclick="event.stopPropagation();removeBench(${i})" title="Remove">\u2715</button></div>
           <div class="photo-strip">${b.photos.map((p,j)=>`<img src="${p}" alt="bench" loading="lazy" style="height:150px" onclick="event.stopPropagation();openBenchLightbox(${i},${j})">`).join('')}</div>
           <div class="card-body">${b.lat?`<span style="cursor:pointer;font-size:18px;float:left;margin-right:8px;margin-top:2px" onclick="event.stopPropagation();flyToBench(${i})">\u{1F4CD}</span>`:''}<p class="card-summary" style="display:inline">${esc(b.caption||'')}</p><div style="font-size:11px;color:#5a5548;margin-top:6px;clear:both">${b.dateAdded||''}</div></div>
@@ -2196,7 +2528,7 @@ function useCurrentLocation(){
   },err=>{
     btn.textContent="📍 Use current location";btn.disabled=false;
     alert("Couldn't get location — type it instead");
-  },{timeout:10000});
+  },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 }
 function setLocFromInput(){const v=document.getElementById('li')?.value?.trim();if(v){S.loc=v;S.screen='welcome';render();}else{alert('Enter a location');}}
 function pickCat(id){S.screen='welcome';S.cat=id;S.prefs=[];S.foodType=null;S.allGPlaces=[];S.pageOffset=0;S.results=null;S.searching=false;S.pageCache={};render();}
@@ -2383,7 +2715,12 @@ document.addEventListener('touchmove',function(e){
 },{passive:false});
 
 // ── Boot ──
+// Cache-then-fetch:
+// 1. Render whatever's in localStorage (instant first paint, even offline)
+// 2. If cache empty AND network is missing, bootFromKV will show the error screen
+// 3. KV fetch + migration runs in the background; re-renders if state changes
 render();
+bootFromKV();
 </script>
 </body>
 </html>
