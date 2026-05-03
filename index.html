@@ -2796,79 +2796,8 @@ async function doSearch(){
     if(!m)throw new Error("No results — try different location");
     const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
     if(!parsed.places?.length)throw new Error("No places found");
-    // Re-stitch place_id from gPlaces by name + address.
-    // Single-name-match: fast path. Multi-name-match (e.g. two "Ship Inn"s in
-    // West Wales): disambiguate via postcode then token overlap on the address.
-    // Without this, Trefin Ship Inn name-collides with Fishguard Ship Inn and
-    // the wrong place_id gets stitched, producing a card whose address is from
-    // one venue but distance pill is computed from the other (16.4mi vs 3mi).
-    if(gPlaces.length){
-      // Postcode patterns: UK + 5-digit (ES/FR/IT/DE/US, with optional ZIP+4
-      // suffix) + Eircode (Ireland). UK and Eircode share leading letters but
-      // diverge at position 2 so don't cross-match. 5-digit has no leading
-      // letter so doesn't cross-match either.
-      const POSTCODE_RE = /\b[a-z]{1,2}\d{1,2}[a-z]?\s*\d[a-z]{2}\b|\b\d{5}(?:-\d{3,4})?\b|\b[a-z]\d{2}\s*[a-z0-9]{4}\b/i;
-
-      parsed.places.forEach(p=>{
-        if(p.place_id) return;
-        const pName = (p.name||'').toLowerCase();
-        const pAddr = (p.address||'').toLowerCase();
-
-        const nameMatches = gPlaces.filter(g => {
-          const gName = (g.name||'').toLowerCase();
-          return gName === pName || pName.includes(gName) || gName.includes(pName);
-        });
-        if(!nameMatches.length) return;
-
-        if(nameMatches.length === 1){
-          if(nameMatches[0].place_id) p.place_id = nameMatches[0].place_id;
-          return;
-        }
-
-        // Multi-name-match — disambiguate by address
-        const pcMatch = pAddr.match(POSTCODE_RE);
-        const postcode = pcMatch ? pcMatch[0].replace(/\s+/g,'').toLowerCase() : null;
-
-        let best = null;
-        let disambigReason = null;
-
-        for(const cand of nameMatches){
-          const cAddr = (cand.address||'').toLowerCase();
-          const cAddrNoSpace = cAddr.replace(/\s+/g,'');
-
-          // Postcode match — strongest signal (uniquely identifies a street section)
-          if(postcode && cAddrNoSpace.includes(postcode)){
-            best = cand;
-            disambigReason = 'postcode';
-            break;
-          }
-
-          // Fall back to token overlap on words >=4 chars (street/town names)
-          const pTokens = new Set(pAddr.split(/[\s,]+/).filter(t=>t.length>=4));
-          const cTokens = new Set(cAddr.split(/[\s,]+/).filter(t=>t.length>=4));
-          let overlap = 0;
-          for(const t of pTokens) if(cTokens.has(t)) overlap++;
-          if(overlap >= 1){
-            best = cand;
-            disambigReason = 'token overlap';
-            break;
-          }
-        }
-
-        // Last resort — first name-match (preserves pre-fix behaviour for the
-        // cases where neither postcode nor token overlap produced a signal)
-        if(!best){
-          best = nameMatches[0];
-          disambigReason = 'fallback (no signal)';
-        }
-
-        // Observability — strip in a later cleanup commit alongside the other
-        // [gl] diagnostic logs from today
-        console.log('[gl] multi-match disambig: ' + p.name + ' (' + nameMatches.length + ' candidates) → ' + disambigReason + ': ' + (best.address || '(no addr)'));
-
-        if(best.place_id) p.place_id = best.place_id;
-      });
-    }
+    // Inject place_id from gPlaces by name-matching
+    if(gPlaces.length){parsed.places.forEach(p=>{if(!p.place_id){const match=gPlaces.find(g=>g.name.toLowerCase()===p.name.toLowerCase()||p.name.toLowerCase().includes(g.name.toLowerCase())||g.name.toLowerCase().includes(p.name.toLowerCase()));if(match?.place_id)p.place_id=match.place_id;}});}
     clearInterval(S.loadInterval);S.loadInterval=null;
     S.pageCache[S.pageOffset||0]=parsed;
     S.results=parsed;S.screen="results";S.searching=false;
