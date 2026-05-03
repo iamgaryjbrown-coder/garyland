@@ -2778,14 +2778,18 @@ async function doSearch(){
 
   if(gPlaces.length>0){
     const listing=gPlaces.map((r,i)=>{
-      let line=`${offset+i+1}. ${r.name} — ${r.address}`;
+      // [id=...] tag at line start round-trips Google's canonical place_id
+      // through Claude — used in re-stitching to avoid name-collision bugs
+      // (e.g. two "The Ship Inn" venues in west Wales).
+      let line=`${offset+i+1}. [id=${r.place_id}] ${r.name} — ${r.address}`;
       if(r.gRating)line+=` (Google: ${r.gRating}/5 from ${r.totalRatings} reviews)`;
       if(r.priceLevel!=null)line+=` ${"£".repeat(r.priceLevel+1)}`;
       if(r.isOpen===true)line+=" [open now]";
       if(r.isOpen===false)line+=" [currently closed]";
       return line;
     }).join("\n");
-    prompt=`Here are ${gPlaces.length} ${catDesc} near "${q.loc}" from Google:\n\n${listing}${prefStr}${ratingNote}${sunCtx}\n\nInclude ALL of them — do not filter any out. Rate each honestly (even if low). Return up to 10.${ratingFloor>0?" Also filter out anything below "+ratingFloor+"/10.":""}\n\nReturn ONLY JSON:\n{"places":[{"name":"<exact name>","address":"<full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nInclude everything — even the average ones. Be honest.`;
+    const idCopyInstr = `Copy each place_id EXACTLY from the input — do not modify, abbreviate, or invent. e.g. if input shows [id=ChIJ9fh7ubPfaEgR5Zj_-SEuAAc] then output must contain "place_id": "ChIJ9fh7ubPfaEgR5Zj_-SEuAAc" character-for-character.`;
+    prompt=`Here are ${gPlaces.length} ${catDesc} near "${q.loc}" from Google:\n\n${listing}${prefStr}${ratingNote}${sunCtx}\n\nInclude ALL of them — do not filter any out. Rate each honestly (even if low). Return up to 10.${ratingFloor>0?" Also filter out anything below "+ratingFloor+"/10.":""}\n\n${idCopyInstr}\n\nReturn ONLY JSON:\n{"places":[{"name":"<exact name>","address":"<full address>","place_id":"<copy from input verbatim>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nInclude everything — even the average ones. Be honest.`;
   } else {
     prompt=`Find up to 10 ${catDesc} near "${q.loc}".${prefStr}${ratingNote}${sunCtx}\n\nSearch the web. Rate each honestly. Return as many as you can find (up to 10).${ratingFloor>0?" Only include places rated "+ratingFloor+"/10 or above.":""}\n\nReturn ONLY JSON:\n{"places":[{"name":"<real>","address":"<real full address>","rating":<1-10>,"summary":"<1-2 opinionated sentences>","price_level":"<£/££/£££>","highlights":["tag","tag"]${q.cat.needsSun?',"sun_verdict":"<honest>"':''},"google_maps_query":"<name+area>"}]}\n\nBe opinionated. Only real places — never invent one.`;
   }
@@ -2796,8 +2800,39 @@ async function doSearch(){
     if(!m)throw new Error("No results — try different location");
     const parsed=JSON.parse(m[0].replace(/```json|```/g,"").trim());
     if(!parsed.places?.length)throw new Error("No places found");
-    // Inject place_id from gPlaces by name-matching
-    if(gPlaces.length){parsed.places.forEach(p=>{if(!p.place_id){const match=gPlaces.find(g=>g.name.toLowerCase()===p.name.toLowerCase()||p.name.toLowerCase().includes(g.name.toLowerCase())||g.name.toLowerCase().includes(p.name.toLowerCase()));if(match?.place_id)p.place_id=match.place_id;}});}
+    // Re-stitch place_id. Happy path: Claude copied the [id=...] tag verbatim
+    // and we trust it directly — this is the canonical disambiguator (Google's
+    // own globally-unique ID), country-agnostic and 100% reliable when copied
+    // correctly. Fallback: name-only match for the cases where Claude omitted
+    // or hallucinated a place_id (rare; logged as a warning so we can tune the
+    // prompt wording if it becomes common).
+    if(gPlaces.length){
+      const idMap = new Map(gPlaces.map(g => [g.place_id, g]));
+      let verbatimCount = 0;
+      parsed.places.forEach(p => {
+        // Trust Claude's place_id if it matches a real candidate
+        if(p.place_id && idMap.has(p.place_id)){
+          verbatimCount++;
+          return;
+        }
+        // Fallback: name-only match (preserves pre-fix behaviour)
+        const reason = p.place_id ? 'unknown place_id ' + p.place_id : 'missing place_id';
+        const match = gPlaces.find(g => {
+          const gn = (g.name||'').toLowerCase();
+          const pn = (p.name||'').toLowerCase();
+          return gn === pn || pn.includes(gn) || gn.includes(pn);
+        });
+        if(match?.place_id){
+          console.warn('[gl] place_id round-trip failed (' + reason + ') for "' + p.name + '" — fell back to name match → ' + match.place_id);
+          p.place_id = match.place_id;
+        } else {
+          console.warn('[gl] place_id round-trip failed (' + reason + ') for "' + p.name + '" — no name match either, leaving null');
+          p.place_id = null;
+        }
+      });
+      // Per-search summary — strip in cleanup commit alongside other [gl] logs
+      console.log('[gl] place_id round-trip: ' + verbatimCount + '/' + parsed.places.length + ' verbatim');
+    }
     clearInterval(S.loadInterval);S.loadInterval=null;
     S.pageCache[S.pageOffset||0]=parsed;
     S.results=parsed;S.screen="results";S.searching=false;
