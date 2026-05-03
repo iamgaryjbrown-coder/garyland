@@ -575,7 +575,12 @@ function loadRoadDistances(){
   if(!S.userLat||!S.results?.places?.length||!window.google?.maps)return;
   const svc=new google.maps.DistanceMatrixService();
   const origin=new google.maps.LatLng(S.userLat,S.userLng);
-  const dests=S.results.places.map(p=>p.address);
+  // Use place_id where available — bypasses DistanceMatrix's request-time
+  // geocoder (which was disambiguating name-collision venues like the two
+  // "Ship Inn"s in west Wales arbitrarily, producing wrong distances).
+  // Falls back to address string when place_id round-trip didn't land
+  // (rare; warned in console by the round-trip block).
+  const dests=S.results.places.map(p=>p.place_id?{placeId:p.place_id}:p.address);
   svc.getDistanceMatrix({origins:[origin],destinations:dests,travelMode:'DRIVING',unitSystem:google.maps.UnitSystem.IMPERIAL},(res,st)=>{
     if(st!=='OK'||!res?.rows?.[0])return;
     res.rows[0].elements.forEach((el,i)=>{
