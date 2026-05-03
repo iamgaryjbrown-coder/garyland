@@ -2734,8 +2734,11 @@ async function doSearch(){
       let raw = await searchAtRadius(radiusM);
       let actual = radiusM;
 
-      // Tier 2 — escalate to 5km if tier 1 returned 0
-      if(raw.length === 0){
+      // Tier 2 — escalate to 5km if tier 1 returned <3.
+      // Symmetric with tier-2-to-tier-3 threshold. Catches rural-noise case
+      // where 1-2 hits from oversized hotel/country-house complexes (e.g. Crug
+      // Glas in Pembrokeshire) crowd out genuine pubs that sit just past 1500m.
+      if(raw.length < 3){
         raw = await searchAtRadius(5000);
         actual = 5000;
         // Tier 3 — escalate to 20km if tier 2 returned <3
