@@ -2736,10 +2736,15 @@ async function doSearch(){
         // Ship Inn, etc.) are reliably type-tagged 'bar' by Google.
         return await googleNearbySearch(S.userLat, S.userLng, rM, 'bar', null);
       }
+      // 4-call eats fan-out:
+      // - type=restaurant + keyword=restaurant for max restaurant catchment (different ranking algorithms)
+      // - keyword=cafe + type=cafe for max cafe catchment (named cafes + Google-tagged cafes lacking "cafe" in name)
+      // type=cafe added 2026-05-04 to catch Brooks & Gao and similar (gbvfx-backlog#24)
       const r = await Promise.all([
         googleNearbySearch(S.userLat,S.userLng,rM,'restaurant'),
         googleNearbySearch(S.userLat,S.userLng,rM,null,'restaurant'),
-        googleNearbySearch(S.userLat,S.userLng,rM,null,'cafe')
+        googleNearbySearch(S.userLat,S.userLng,rM,null,'cafe'),
+        googleNearbySearch(S.userLat,S.userLng,rM,'cafe',null)
       ]);
       return dedupFlatten(r);
     };
