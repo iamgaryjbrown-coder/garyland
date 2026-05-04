@@ -323,7 +323,14 @@ let S={
   spudChatLoading:false,
   range:null,
   // Pagination
-  allGPlaces:[],pageOffset:0,pageSize:10,pageCache:{}
+  // claudePoolSize: how many distance-sorted candidates get sent to Claude per
+  // page. Decoupled from how many cards Claude returns (capped at 10 by the
+  // prompt's "Return up to 10" instruction) — lets Claude pick from a broader
+  // pool than the displayed page size. Bumped from old pageSize=10 because the
+  // 2026-05-04 Streatham diagnostic showed destination-quality venues clustering
+  // at distance ranks 11-30 (ROOTS, Pho Balham, Spice Village, Café Barcelona,
+  // etc.) being lost when Claude only saw the closest 10.
+  allGPlaces:[],pageOffset:0,claudePoolSize:30,pageCache:{}
 };
 
 // ── Persistent Storage ──
@@ -1173,7 +1180,7 @@ function renderResults(){
     <p style="font-size:13px;color:#6a645a;margin-bottom:${S.escalated?'2px':'16px'}">near ${esc(q.loc)}${q.sun?` · ${q.sun.date} at ${q.sun.time}`:""}</p>
     ${S.escalated?`<p style="font-size:11px;color:#6a645a;font-style:italic;margin-bottom:16px">${S.actualRadiusM===20000?'20km radius — local area was sparse':S.actualRadiusM/1000+'km radius — nothing closer found'}</p>`:''}`;
 
-  const hasMore=S.allGPlaces.length>(S.pageOffset||0)+S.pageSize;
+  const hasMore=S.allGPlaces.length>(S.pageOffset||0)+S.claudePoolSize;
   h+=`<div style="display:flex;flex-direction:column;gap:16px;padding-bottom:40px">`;
   S.results.places.forEach((p,i)=>{
     const bc=p.rating>=8?"badge-high":p.rating>=6?"badge-mid":"badge-low";
@@ -2626,7 +2633,7 @@ function goBack(){
 }
 
 async function loadMoreResults(){
-  const newOffset=(S.pageOffset||0)+S.pageSize;
+  const newOffset=(S.pageOffset||0)+S.claudePoolSize;
   S.pageOffset=newOffset;
   S.searching=false;
   // Use cache if available
@@ -2635,7 +2642,7 @@ async function loadMoreResults(){
   await doSearch();
 }
 async function loadPrevResults(){
-  const newOffset=Math.max(0,(S.pageOffset||0)-S.pageSize);
+  const newOffset=Math.max(0,(S.pageOffset||0)-S.claudePoolSize);
   S.pageOffset=newOffset;
   S.searching=false;
   // Use cache — previous page was always already fetched
@@ -2773,7 +2780,7 @@ async function doSearch(){
   }
 
   const offset=S.pageOffset||0;
-  const gPlaces=S.allGPlaces.slice(offset,offset+S.pageSize);
+  const gPlaces=S.allGPlaces.slice(offset,offset+S.claudePoolSize);
 
   // Build prompt — either review Google results or ask Spud to search
   const prefStr=foodTypeStr?`\nCuisine focus: ${foodTypeStr}.`:"";
