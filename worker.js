@@ -1,5 +1,5 @@
-// GaryLand API Proxy — Cloudflare Worker (v5: + KV favourites sync)
-// Secrets: OPENCLAW_TOKEN, OPENCLAW_URL, ANTHROPIC_KEY (set via wrangler secret put)
+// GaryLand API Proxy — Cloudflare Worker (v6: direct Anthropic, no OpenClaw)
+// Secrets: ANTHROPIC_KEY (set via wrangler secret put)
 // KV: FAVS namespace bound in wrangler.toml
 export default {
   async fetch(request, env) {
@@ -44,11 +44,7 @@ export default {
 
     const body = await request.json();
 
-    if (body.sessionId && body.sessionId.startsWith("venue-")) {
-      return handleVenueDirect(body, env);
-    }
-
-    return handleOpenClaw(body, env);
+    return handleClaude(body, env);
   },
 };
 
@@ -96,11 +92,12 @@ async function handleSyncLink(request, env) {
 }
 
 // ═══════════════════════════════════════
-// Venue chat: direct Anthropic
+// Chat: direct Anthropic
 // ═══════════════════════════════════════
-async function handleVenueDirect(body, env) {
+async function handleClaude(body, env) {
   const messages = body.messages || [];
   const system = body.system || "";
+  const max_tokens = body.max_tokens || 1024;
 
   let resp;
   try {
@@ -113,14 +110,14 @@ async function handleVenueDirect(body, env) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1024,
+        max_tokens: max_tokens,
         system: system,
         messages: messages,
       }),
     });
   } catch (err) {
     return corsJson({
-      content: [{ type: "text", text: "Venue fetch error: " + String(err) }],
+      content: [{ type: "text", text: "Claude fetch error: " + String(err) }],
       role: "assistant",
     });
   }
@@ -136,77 +133,6 @@ async function handleVenueDirect(body, env) {
 
   const text = data.content?.filter(b => b.type === "text").map(b => b.text).join("\n") || "";
   return corsJson({ content: [{ type: "text", text }], role: "assistant" });
-}
-
-// ═══════════════════════════════════════
-// Freeform chat: OpenClaw
-// ═══════════════════════════════════════
-async function handleOpenClaw(body, env) {
-  const input = [];
-
-  if (body.system) {
-    input.push({ type: "message", role: "developer", content: body.system });
-  }
-
-  if (body.messages) {
-    for (const msg of body.messages) {
-      input.push({ type: "message", role: msg.role, content: msg.content });
-    }
-  }
-
-  const sessionUser = body.sessionId || "garyland";
-
-  const ocBody = {
-    model: "openclaw",
-    input: input,
-    user: sessionUser,
-  };
-
-  let resp;
-  try {
-    resp = await fetch(`${env.OPENCLAW_URL}/v1/responses`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.OPENCLAW_TOKEN}`,
-        "x-openclaw-agent-id": "main",
-      },
-      body: JSON.stringify(ocBody),
-    });
-  } catch (err) {
-    return corsJson({
-      content: [{ type: "text", text: "Spud fetch error: " + String(err) }],
-      role: "assistant",
-    });
-  }
-
-  const ocData = await resp.json();
-
-  if (ocData.error) {
-    return corsJson({
-      content: [{ type: "text", text: "Spud error: " + (ocData.error.message || JSON.stringify(ocData.error)) }],
-      role: "assistant",
-    });
-  }
-
-  let text = "";
-  if (ocData.output) {
-    for (const item of ocData.output) {
-      if (item.type === "message" && item.content) {
-        for (const block of item.content) {
-          if (block.type === "output_text") {
-            text += block.text;
-          }
-        }
-      }
-    }
-  }
-
-  return corsJson({
-    content: [{ type: "text", text }],
-    model: "openclaw",
-    role: "assistant",
-  });
 }
 
 // ═══════════════════════════════════════

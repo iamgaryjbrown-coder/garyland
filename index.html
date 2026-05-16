@@ -186,7 +186,6 @@ input[type="range"]{accent-color:#d4a853}
 const WORKER_URL = "https://garyland-api.garyland.workers.dev";
 const GOOGLE_KEY = "AIzaSyCTUs24auwcikig1MDHuJFcPAKRUj3WajQ";
 
-// ── Spud Personality lives in SOUL.md on the VPS — do not duplicate here ──
 
 // ═══════════════════════════════════════
 // Cloud-first storage layer
@@ -320,7 +319,7 @@ let S={
   results:null,query:null,error:null,
   chatPlace:null,chatMsgs:[],chatLoading:false,
   loadMsgIdx:0,loadInterval:null,searching:false,
-  spudChatLoading:false,
+  rogueChatLoading:false,
   range:null,
   // Pagination
   // claudePoolSize: how many distance-sorted candidates get sent to Claude per
@@ -334,10 +333,10 @@ let S={
 };
 
 // ── Persistent Storage ──
-function loadSpudChat(){try{return JSON.parse(localStorage.getItem('garyland_spud_chat'))||[];}catch(e){return[];}}
-function saveSpudChat(msgs){try{localStorage.setItem('garyland_spud_chat',JSON.stringify(msgs));}catch(e){}}
-let spudChatHistory=loadSpudChat();
-let spudSessionStart=0;
+function loadRogueChat(){try{return JSON.parse(localStorage.getItem('garyland_spud_chat'))||[];}catch(e){return[];}}
+function saveRogueChat(msgs){try{localStorage.setItem('garyland_spud_chat',JSON.stringify(msgs));}catch(e){}}
+let rogueChatHistory=loadRogueChat();
+let rogueSessionStart=0;
 
 // ═══════════════════════════════════════
 // Cloud-first storage: KV is truth, localStorage is render cache only
@@ -656,7 +655,7 @@ function closeMapPopup(){
 // ═══════════════════════════════════════
 async function callClaude(messages,system,sessionId){
   if(!WORKER_URL||WORKER_URL.includes("PASTE")){throw new Error("Worker URL not configured — edit the HTML config section");}
-  const body={model:"openclaw",max_tokens:2500,messages};
+  const body={max_tokens:2500,messages};
   if(system)body.system=system;
   if(sessionId)body.sessionId=sessionId;
   const r=await fetch(WORKER_URL,{
@@ -665,7 +664,7 @@ async function callClaude(messages,system,sessionId){
     body:JSON.stringify(body)
   });
   if(!r.ok){
-    if(r.status===401)throw new Error("Spud auth failed — check worker secrets");
+    if(r.status===401)throw new Error("Claude auth failed — check worker secrets");
     if(r.status===429)throw new Error("Rate limited — wait a moment");
     throw new Error("API error "+r.status);
   }
@@ -1146,7 +1145,7 @@ function renderWelcome(){
       <button class="btn" onclick="pickCat('eat')">🥘 Eat Out!</button>
       <button class="btn" onclick="openBenches()">🪑 And Pause</button>
       <div style="height:6px"></div>
-      <button class="btn" onclick="openSpudChat()" style="border-color:#d4a853;color:#d4a853">🪲 Ask Spud</button>
+      <button class="btn" onclick="openRogueChat()" style="border-color:#d4a853;color:#d4a853">🏴‍☠️ Go Rogue</button>
       ${favCount?`<button class="btn" onclick="openFavourites()">❤️ Favourites <span style="font-size:11px;color:#6a645a">(${favCount})</span></button>`:""}
     </div>
   </div>`;
@@ -1206,7 +1205,7 @@ function renderResults(){
       ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
       <button class="btn" style="width:100%;margin-top:12px" onclick="openChat(${i})">💬 Tell me more</button></div></div>`;
   });
-  // Pagination + Ask Spud buttons
+  // Pagination + Go Rogue buttons
   h+=`<div style="display:flex;flex-direction:column;gap:10px;padding-top:8px">`;
   if((S.pageOffset||0)>0){
     h+=`<button class="btn" style="width:100%;padding:14px 0;font-size:15px;margin-bottom:8px" onclick="loadPrevResults()">← Previous page</button>`;
@@ -1214,7 +1213,7 @@ function renderResults(){
   if(hasMore){
     h+=`<button class="btn active" style="width:100%;padding:14px 0;font-size:15px" onclick="loadMoreResults()">More places →</button>`;
   }
-  h+=`<button class="btn" style="width:100%;padding:12px 0;border-color:#d4a853;color:#d4a853" onclick="openSpudChat()">🪲 Ask Spud instead</button>`;
+  h+=`<button class="btn" style="width:100%;padding:12px 0;border-color:#d4a853;color:#d4a853" onclick="openRogueChat()">🏴‍☠️ Go Rogue instead</button>`;
   h+=`</div>`;
   h+=`</div></div></div>`;
   app.innerHTML=h;
@@ -1287,28 +1286,28 @@ async function sendChat(){
 function openChat(i){S.chatPlace=S.results.places[i];S.chatMsgs=[];S.chatLoading=false;renderChat();}
 function closeChat(){S.chatPlace=null;renderResults();}
 
-// ── Chat from Spud freeform results ──
-let spudChatSource=null; // Track if chat was opened from Spud results
-function openChatFromSpud(i){
+// ── Chat from Go Rogue freeform results ──
+let rogueChatSource=null; // Track if chat was opened from Go Rogue results
+function openChatFromRogue(i){
   const p=chatPlaces[i];if(!p)return;
   S.chatPlace={name:p.name,address:p.address||''};
   S.chatMsgs=[];S.chatLoading=false;
-  spudChatSource='spud';
-  renderChatFromSpud();
+  rogueChatSource='rogue';
+  renderChatFromRogue();
 }
-function renderChatFromSpud(){
-  const p=S.chatPlace;if(!p){closeSpudVenueChat();return;}
+function renderChatFromRogue(){
+  const p=S.chatPlace;if(!p){closeRogueVenueChat();return;}
   let mh=S.chatMsgs.length===0?`<p class="chat-empty">Ask me anything about ${esc(p.name)}...</p>`
     :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
   if(S.chatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
-  app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeSpudVenueChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="cs"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChatFromSpud()"><button class="btn active" style="flex-shrink:0" onclick="sendChatFromSpud()" ${S.chatLoading?"disabled":""}>→</button></div></div></div>`;
+  app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeRogueVenueChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="cs"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChatFromRogue()"><button class="btn active" style="flex-shrink:0" onclick="sendChatFromRogue()" ${S.chatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("cs");if(sc)sc.scrollTop=sc.scrollHeight;
 }
-async function sendChatFromSpud(){
+async function sendChatFromRogue(){
   const inp=document.getElementById("ci"),text=inp?.value?.trim();
   if(!text||S.chatLoading)return;inp.value="";
   const p=S.chatPlace;
-  S.chatMsgs.push({role:"user",content:text});S.chatLoading=true;renderChatFromSpud();
+  S.chatMsgs.push({role:"user",content:text});S.chatLoading=true;renderChatFromRogue();
   try{
     const locCtx=S.loc?` Location context: ${S.loc}.`:"";
     const sys=`You are currently in GaryLand venue chat mode. The user tapped "Want to know more?" on a venue card. Venue: "${p.name}" at ${p.address}.${locCtx} Be helpful and specific about this place. Plain text only — no markdown. You CANNOT show images.`;
@@ -1316,9 +1315,9 @@ async function sendChatFromSpud(){
     const reply=await callClaude(S.chatMsgs.map(m=>({role:m.role,content:m.content})),sys,venueKey);
     S.chatMsgs.push({role:"assistant",content:reply||"No response."});
   }catch(e){S.chatMsgs.push({role:"assistant",content:e.message});}
-  S.chatLoading=false;renderChatFromSpud();
+  S.chatLoading=false;renderChatFromRogue();
 }
-function closeSpudVenueChat(){S.chatPlace=null;spudChatSource=null;renderSpudChat();}
+function closeRogueVenueChat(){S.chatPlace=null;rogueChatSource=null;renderRogueChat();}
 
 // ═══════════════════════════════════════
 // Settings
@@ -1326,7 +1325,7 @@ function closeSpudVenueChat(){S.chatPlace=null;spudChatSource=null;renderSpudCha
 // Settings removed — keys are embedded in config
 
 // ═══════════════════════════════════════
-// Spud Freeform Chat
+// Go Rogue Freeform Chat
 // ═══════════════════════════════════════
 function tryParseVenues(text){
   try{const m=text.match(/\{[\s\S]*"places"[\s\S]*\}/);if(!m)return null;const p=JSON.parse(m[0].replace(/```json|```/g,"").trim());return p.places?.length?p:null;}catch(e){return null;}
@@ -1403,24 +1402,24 @@ function renderChatVenues(places,textBefore,resetOffset=false){
       <div class="card-body"><p class="card-summary">${esc(p.summary||'')}</p>
       ${p.sun_verdict?`<p class="sun-verdict">\u2600\ufe0f ${esc(p.sun_verdict)}</p>`:""}
       ${p.highlights?.length?`<div class="flex-wrap-tags">${p.highlights.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
-      <button class="btn" style="width:100%;margin-top:12px" onclick="openChatFromSpud(${idx})">💬 Want to know more?</button></div></div>`;
+      <button class="btn" style="width:100%;margin-top:12px" onclick="openChatFromRogue(${idx})">💬 Want to know more?</button></div></div>`;
   });
   return h;
 }
-let spudJustGotResponse=false; // Track if we just received a fresh response
-function openSpudChat(){spudSessionStart=0;spudJustGotResponse=false;renderSpudChat();}
+let rogueJustGotResponse=false; // Track if we just received a fresh response
+function openRogueChat(){rogueSessionStart=0;rogueJustGotResponse=false;renderRogueChat();}
 
-function renderSpudChat(){
+function renderRogueChat(){
   // Reset venue tracking for fresh render
   chatPlaces=[];chatCardPhotos={};chatVenueOffset=0;
   let firstVenueBlock=true;
-  let mh=spudChatHistory.length===0?`<p class="chat-empty">Ask me anything — pubs, restaurants, days out, what to do when it rains...</p>`
-    :spudChatHistory.slice(spudSessionStart).map(m=>{if(m.role==="user")return`<div class="chat-bubble chat-user">${escBr(m.content)}</div>`;const v=tryParseVenues(m.content);if(v){const before=m.content.substring(0,m.content.indexOf('{'));const html=renderChatVenues(v.places,before,firstVenueBlock);firstVenueBlock=false;return html;}return`<div class="chat-bubble chat-bot">${escBr(stripMd(m.content))}</div>`;}).join("");
-  if(S.spudChatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Spud is thinking...</p>`;
-  app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>🪲 Ask Spud</h3></div><button class="chat-close" onclick="closeSpudChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="scm"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="sci" placeholder="Ask Spud anything..." onkeydown="if(event.key==='Enter')sendSpudChat()"><button class="btn active" style="flex-shrink:0" onclick="sendSpudChat()" ${S.spudChatLoading?"disabled":""}>→</button></div></div></div>`;
+  let mh=rogueChatHistory.length===0?`<p class="chat-empty">Ask me anything — pubs, restaurants, days out, what to do when it rains...</p>`
+    :rogueChatHistory.slice(rogueSessionStart).map(m=>{if(m.role==="user")return`<div class="chat-bubble chat-user">${escBr(m.content)}</div>`;const v=tryParseVenues(m.content);if(v){const before=m.content.substring(0,m.content.indexOf('{'));const html=renderChatVenues(v.places,before,firstVenueBlock);firstVenueBlock=false;return html;}return`<div class="chat-bubble chat-bot">${escBr(stripMd(m.content))}</div>`;}).join("");
+  if(S.rogueChatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
+  app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>🏴‍☠️ Go Rogue</h3></div><button class="chat-close" onclick="closeRogueChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="scm"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="sci" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendRogueChat()"><button class="btn active" style="flex-shrink:0" onclick="sendRogueChat()" ${S.rogueChatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("scm");
   if(sc){
-    if(spudJustGotResponse&&lastVenueBlockStart!==null){
+    if(rogueJustGotResponse&&lastVenueBlockStart!==null){
       // Fresh results just returned with venues → scroll to top of new list
       const latestCard=document.getElementById('cph-'+lastVenueBlockStart)?.closest('.card');
       if(latestCard){latestCard.scrollIntoView({behavior:'auto',block:'start'});}
@@ -1429,7 +1428,7 @@ function renderSpudChat(){
       // Opening chat / viewing history → scroll to bottom
       sc.scrollTop=sc.scrollHeight;
     }
-    spudJustGotResponse=false; // Reset flag after handling
+    rogueJustGotResponse=false; // Reset flag after handling
   }
   document.querySelectorAll('[id^="cph-"]').forEach(el=>{
     const idx=parseInt(el.id.replace('cph-',''));
@@ -1452,35 +1451,35 @@ function renderSpudChat(){
   }
 }
 
-async function sendSpudChat(){
+async function sendRogueChat(){
   const inp=document.getElementById("sci"),text=inp?.value?.trim();
-  if(!text||S.spudChatLoading)return;
+  if(!text||S.rogueChatLoading)return;
   inp.value="";
-  spudChatHistory.push({role:"user",content:text});
-  saveSpudChat(spudChatHistory);
-  S.spudChatLoading=true;renderSpudChat();
+  rogueChatHistory.push({role:"user",content:text});
+  saveRogueChat(rogueChatHistory);
+  S.rogueChatLoading=true;renderRogueChat();
   try{
     const locParts=[];if(S.loc)locParts.push(`The user is in/near "${S.loc}".`);if(S.userLat)locParts.push(`GPS: ${S.userLat.toFixed(4)},${S.userLng.toFixed(4)}.`);
     const locCtx=locParts.length?" "+locParts.join(" ")+" Always recommend places close to this location — within walking or short driving distance.":"";
     const sys=`You are in GaryLand freeform chat mode. The user can ask you anything about places, food, drink, days out, things to do.${locCtx} Be conversational and helpful. If they ask you to find specific places, return them as JSON in this format: {"places":[{"name":"...","address":"...","rating":1-10,"summary":"1-2 sentences","price_level":"£/££/£££","highlights":["tag"],"google_maps_query":"name+area","place_id":"<Google place_id if known, else omit>"}]} — the app will render these as nice cards. For general chat that is NOT about finding places, just respond in plain text. NEVER use markdown formatting — no asterisks, no bold, no bullet points. Write in plain conversational English. Keep responses concise.`;
     // Send last 20 messages for context (keep token use reasonable)
-    const msgs=spudChatHistory.slice(-20).map(m=>({role:m.role,content:m.content}));
+    const msgs=rogueChatHistory.slice(-20).map(m=>({role:m.role,content:m.content}));
     const reply=await callClaude(msgs,sys,"garyland-chat");
-    spudChatHistory.push({role:"assistant",content:reply||"Sorry, I drew a blank there. Try asking again?"});
-    saveSpudChat(spudChatHistory);
+    rogueChatHistory.push({role:"assistant",content:reply||"Sorry, I drew a blank there. Try asking again?"});
+    saveRogueChat(rogueChatHistory);
   }catch(e){
-    spudChatHistory.push({role:"assistant",content:"Hit a snag: "+e.message+". Give it another go?"});
-    saveSpudChat(spudChatHistory);
+    rogueChatHistory.push({role:"assistant",content:"Hit a snag: "+e.message+". Give it another go?"});
+    saveRogueChat(rogueChatHistory);
   }
-  S.spudChatLoading=false;spudJustGotResponse=true;renderSpudChat();
+  S.rogueChatLoading=false;rogueJustGotResponse=true;renderRogueChat();
 }
 
-function clearSpudChat(){
-  if(!confirm('Clear chat history with Spud?'))return;
-  spudChatHistory=[];saveSpudChat(spudChatHistory);renderSpudChat();
+function clearRogueChat(){
+  if(!confirm('Clear chat history?'))return;
+  rogueChatHistory=[];saveRogueChat(rogueChatHistory);renderRogueChat();
 }
 
-function closeSpudChat(){S.screen="welcome";S.cat=null;render();}
+function closeRogueChat(){S.screen="welcome";S.cat=null;render();}
 
 // ═══════════════════════════════════════
 // Favourites — Globe + Folder View
@@ -1995,7 +1994,7 @@ async function linkDevice(){
 
 function unlinkDevice(){
   if(!confirm('This will clear GaryLand data from this device. Your data on the cloud is safe. Continue?')) return;
-  // Wipe everything except spud chat (cosmetic, not part of cloud-first)
+  // Wipe everything except rogue chat (cosmetic, not part of cloud-first)
   ['garyland_token','garyland_favourites','garyland_benches','garyland_migrated_v2'].forEach(k=>localStorage.removeItem(k));
   location.reload();
 }
@@ -2787,7 +2786,7 @@ async function doSearch(){
   const offset=S.pageOffset||0;
   const gPlaces=S.allGPlaces.slice(offset,offset+S.claudePoolSize);
 
-  // Build prompt — either review Google results or ask Spud to search
+  // Build prompt — either review Google results or ask Claude to search
   const prefStr=foodTypeStr?`\nCuisine focus: ${foodTypeStr}.`:"";
   const catDesc={sun_pub:"pubs with outdoor seating in direct sun",sun_eat:"restaurants with outdoor dining in direct sun",pub:"pubs",eat:"restaurants"}[q.cat.id]||"places";
   const ratingNote=ratingFloor>0?`\nOnly include places you'd rate ${ratingFloor}/10 or above. Skip anything below that.`:"";
