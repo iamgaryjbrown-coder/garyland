@@ -782,6 +782,11 @@ let cardInfo={};
 // (used by queueCardPhotos to limit concurrency; never rejects).
 function loadCardPhotos(i,name,addr,placeId){
   if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return Promise.resolve();
+  // Remember which results page started this lookup. If the page changes
+  // before it answers (new render, Back, chat), drop the answer so it
+  // can't write photos or coords onto another page's card i.
+  const gen=photoQueueGen;
+  const stale=()=>gen!==photoQueueGen;
   cardInfo[i]={name,addr,placeId};
   const photoPromise=placeId
     ?loadMaps(GOOGLE_KEY).then(()=>new Promise(res=>{
@@ -794,6 +799,7 @@ function loadCardPhotos(i,name,addr,placeId){
       }))
     :loadMaps(GOOGLE_KEY).then(()=>getPhotosAndGeometry(name,addr));
   return photoPromise.then(result=>{
+    if(stale())return;
     // Store coordinates
     if(result.lat&&result.lng){
       cardCoords[i]={lat:result.lat,lng:result.lng};
@@ -813,6 +819,7 @@ function loadCardPhotos(i,name,addr,placeId){
     cardPhotos[i]=result.photos;
     el.innerHTML=result.photos.map((u,j)=>`<img src="${u}" alt="photo" loading="lazy" onclick="openLightbox(${i},${j})">`).join("");
   }).catch(()=>{
+    if(stale())return;
     hideShadowMap(i);
     if(S.query?.cat?.needsSun)onCoordsReady();
     showPhotoRefresh(i);
@@ -822,21 +829,26 @@ function loadCardPhotos(i,name,addr,placeId){
 // getDetails per card all at once (30 cards at Streatham, 2026-05-04)
 // made iOS Safari drop requests ("network connection was lost").
 // At most PHOTO_CONCURRENCY lookups run at once; the rest wait in order.
-// A new results render (or Back) bumps photoQueueGen so queued lookups
-// from the previous page are dropped instead of writing into new cards.
+// photoQueueGen identifies the current page. It is bumped by each new
+// results render, Back, Tell me more, Go Rogue and the Favourites list.
+// A bump stops the old queue starting more lookups, and loadCardPhotos
+// discards answers from lookups already in flight (incl. ones whose slot
+// was freed by the timeout below).
 const PHOTO_CONCURRENCY=6;
 const PHOTO_SLOT_TIMEOUT_MS=8000;
 let photoQueueGen=0;
-function queueCardPhotos(places){
+// jobs: array of functions, each starting one lookup and returning a
+// Promise. onAllStarted (optional) runs once the last job has started.
+function runPhotoQueue(jobs,onAllStarted){
   const gen=++photoQueueGen;
-  const queue=places.map((p,i)=>({i,p}));
-  let active=0;
+  const queue=jobs.slice();
+  let active=0,allStarted=false;
   const runNext=()=>{
     while(gen===photoQueueGen&&active<PHOTO_CONCURRENCY&&queue.length){
-      const {i,p}=queue.shift();
+      const job=queue.shift();
       active++;
       let task;
-      try{task=loadCardPhotos(i,p.name,p.address,p.place_id||null);}catch(e){task=null;}
+      try{task=job();}catch(e){task=null;}
       // Free the slot when the lookup settles, or after PHOTO_SLOT_TIMEOUT_MS
       // if a Places callback never fires (the lookup itself carries on).
       let freed=false;
@@ -844,8 +856,15 @@ function queueCardPhotos(places){
       setTimeout(free,PHOTO_SLOT_TIMEOUT_MS);
       Promise.resolve(task).catch(()=>{}).then(free);
     }
+    if(!allStarted&&!queue.length&&gen===photoQueueGen){
+      allStarted=true;
+      if(onAllStarted)try{onAllStarted();}catch(e){}
+    }
   };
   runNext();
+}
+function queueCardPhotos(places,onAllStarted){
+  runPhotoQueue(places.map((p,i)=>()=>loadCardPhotos(i,p.name,p.address,p.place_id||null)),onAllStarted);
 }
 function showPhotoRefresh(i){
   const el=document.getElementById("ph-"+i);
@@ -954,6 +973,15 @@ function startOverpassWait(expected){
   overpassDone=false;
   allBuildings=[];
   // Safety timeout — fire even if some coords never arrive
+  overpassTimeout=setTimeout(triggerOverpassFetch,4000);
+}
+// Photo lookups are queued (gbvfx-backlog#25), so cards 7+ start late.
+// Called once the last card's lookup has started: restart the 4s safety
+// timer from then, so late cards still get their coords in before the
+// single Overpass fetch.
+function restartOverpassWait(){
+  if(overpassDone)return;
+  if(overpassTimeout)clearTimeout(overpassTimeout);
   overpassTimeout=setTimeout(triggerOverpassFetch,4000);
 }
 
@@ -1197,6 +1225,7 @@ function renderLoading(){
 function renderResults(){
   const q=S.query;
   const isSun=q.cat.needsSun;
+  photoQueueGen++; // previous page's photo lookups are now stale
   
   // Clean up old shadow map instances
   overpassDone=true;allBuildings=[];
@@ -1253,7 +1282,7 @@ function renderResults(){
   if(isSun){
     startOverpassWait(S.results.places.length);
     loadLeaflet().then(()=>{
-      queueCardPhotos(S.results.places);
+      queueCardPhotos(S.results.places,restartOverpassWait);
       loadRoadDistances();
     });
   } else {
@@ -1314,7 +1343,7 @@ async function sendChat(){
   }catch(e){S.chatMsgs.push({role:"assistant",content:e.message});}
   S.chatLoading=false;renderChat();
 }
-function openChat(i){S.chatPlace=S.results.places[i];S.chatMsgs=[];S.chatLoading=false;renderChat();}
+function openChat(i){photoQueueGen++;S.chatPlace=S.results.places[i];S.chatMsgs=[];S.chatLoading=false;renderChat();}
 function closeChat(){S.chatPlace=null;renderResults();}
 
 // ── Chat from Go Rogue freeform results ──
@@ -1438,7 +1467,7 @@ function renderChatVenues(places,textBefore,resetOffset=false){
   return h;
 }
 let rogueJustGotResponse=false; // Track if we just received a fresh response
-function openRogueChat(){rogueSessionStart=0;rogueJustGotResponse=false;renderRogueChat();}
+function openRogueChat(){photoQueueGen++;rogueSessionStart=0;rogueJustGotResponse=false;renderRogueChat();}
 
 function renderRogueChat(){
   // Reset venue tracking for fresh render
@@ -1757,14 +1786,15 @@ function renderFavList(){
   // Load photos for each favourite
   if(GOOGLE_KEY&&!GOOGLE_KEY.includes("PASTE")){
     loadMaps(GOOGLE_KEY).then(()=>{
-      favourites.forEach((f,i)=>{
-        const el=document.getElementById('fav-ph-'+i);if(!el)return;
-        getPhotosAndGeometry(f.name,f.address).then(result=>{
+      // Same concurrency-limited queue as result cards (gbvfx-backlog#25)
+      runPhotoQueue(favourites.map((f,i)=>()=>{
+        const el=document.getElementById('fav-ph-'+i);if(!el)return null;
+        return getPhotosAndGeometry(f.name,f.address).then(result=>{
           if(!result.photos.length){el.style.display='none';return;}
           favPhotos[i]=result.photos;
           el.innerHTML=result.photos.map((u,j)=>`<img src="${u}" alt="photo" loading="lazy" onclick="event.stopPropagation();openFavLightbox(${i},${j})">`).join('');
         }).catch(()=>{el.style.display='none';});
-      });
+      }));
     });
   }
 }
