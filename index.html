@@ -778,8 +778,10 @@ function googleTextSearch(query,lat,lng,radiusM){
 
 let cardPhotos={};
 let cardInfo={};
+// Returns a Promise that settles once this card's photo lookup is done
+// (used by queueCardPhotos to limit concurrency; never rejects).
 function loadCardPhotos(i,name,addr,placeId){
-  if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return;
+  if(!GOOGLE_KEY||GOOGLE_KEY.includes("PASTE"))return Promise.resolve();
   cardInfo[i]={name,addr,placeId};
   const photoPromise=placeId
     ?loadMaps(GOOGLE_KEY).then(()=>new Promise(res=>{
@@ -791,7 +793,7 @@ function loadCardPhotos(i,name,addr,placeId){
         });
       }))
     :loadMaps(GOOGLE_KEY).then(()=>getPhotosAndGeometry(name,addr));
-  photoPromise.then(result=>{
+  return photoPromise.then(result=>{
     // Store coordinates
     if(result.lat&&result.lng){
       cardCoords[i]={lat:result.lat,lng:result.lng};
@@ -815,6 +817,35 @@ function loadCardPhotos(i,name,addr,placeId){
     if(S.query?.cat?.needsSun)onCoordsReady();
     showPhotoRefresh(i);
   });
+}
+// Concurrency-limited photo loading (gbvfx-backlog#25). Firing one
+// getDetails per card all at once (30 cards at Streatham, 2026-05-04)
+// made iOS Safari drop requests ("network connection was lost").
+// At most PHOTO_CONCURRENCY lookups run at once; the rest wait in order.
+// A new results render (or Back) bumps photoQueueGen so queued lookups
+// from the previous page are dropped instead of writing into new cards.
+const PHOTO_CONCURRENCY=6;
+const PHOTO_SLOT_TIMEOUT_MS=8000;
+let photoQueueGen=0;
+function queueCardPhotos(places){
+  const gen=++photoQueueGen;
+  const queue=places.map((p,i)=>({i,p}));
+  let active=0;
+  const runNext=()=>{
+    while(gen===photoQueueGen&&active<PHOTO_CONCURRENCY&&queue.length){
+      const {i,p}=queue.shift();
+      active++;
+      let task;
+      try{task=loadCardPhotos(i,p.name,p.address,p.place_id||null);}catch(e){task=null;}
+      // Free the slot when the lookup settles, or after PHOTO_SLOT_TIMEOUT_MS
+      // if a Places callback never fires (the lookup itself carries on).
+      let freed=false;
+      const free=()=>{if(freed)return;freed=true;active--;runNext();};
+      setTimeout(free,PHOTO_SLOT_TIMEOUT_MS);
+      Promise.resolve(task).catch(()=>{}).then(free);
+    }
+  };
+  runNext();
 }
 function showPhotoRefresh(i){
   const el=document.getElementById("ph-"+i);
@@ -1222,11 +1253,11 @@ function renderResults(){
   if(isSun){
     startOverpassWait(S.results.places.length);
     loadLeaflet().then(()=>{
-      S.results.places.forEach((p,i)=>loadCardPhotos(i,p.name,p.address,p.place_id||null));
+      queueCardPhotos(S.results.places);
       loadRoadDistances();
     });
   } else {
-    S.results.places.forEach((p,i)=>loadCardPhotos(i,p.name,p.address,p.place_id||null));
+    queueCardPhotos(S.results.places);
     loadRoadDistances();
   }
 }
@@ -2621,6 +2652,7 @@ function renderFoodPicker(){
 function togglePref(p){const i=S.prefs.indexOf(p);if(i>=0)S.prefs.splice(i,1);else S.prefs.push(p);render();}
 function goBack(){
   clearInterval(S.loadInterval);S.loadInterval=null;
+  photoQueueGen++; // drop any queued card-photo lookups
   releaseWakeLock();
   overpassDone=true;allBuildings=[];
   if(overpassTimeout){clearTimeout(overpassTimeout);overpassTimeout=null;}
