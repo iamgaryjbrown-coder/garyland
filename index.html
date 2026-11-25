@@ -547,7 +547,9 @@ const escBr=s=>esc(s).replace(/\n/g,"<br>");
 const stripMd=s=>(s||"").replace(/\*\*/g,"").replace(/\*/g,"").replace(/^#+\s/gm,"").replace(/^[-*]\s/gm,"• ");
 // Bot replies: escape, keep line breaks, and turn web links (the Worker's Sources list) into tappable links showing the site name.
 const linkHost=u=>{try{return new URL(u.replace(/&amp;/g,"&")).hostname.replace(/^www\./,"");}catch(e){return "link";}};
-const botHtml=s=>escBr(stripMd(s)).replace(/https?:\/\/[^\s<>"']+/g,m=>{const t=(m.match(/[).,;:!?]+$/)||[""])[0];const u=t?m.slice(0,-t.length):m;return `<a href="${u}" target="_blank" rel="noopener noreferrer" style="color:#7dbd7d">${linkHost(u)}</a>${t}`;});
+// Trailing punctuation is left out of a link, except a ")" that closes a "(" inside the URL; <...> around a URL is dropped.
+const linkTrim=m=>{let u=m,t="";while(/[).,;:!?]$/.test(u)){const c=u.slice(-1);if(c===")"&&(u.split("(").length-1)>=(u.split(")").length-1))break;t=c+t;u=u.slice(0,-1);}return[u,t];};
+const botHtml=s=>escBr(stripMd(s)).replace(/&lt;(https?:\/\/[^\s<>"']+?)&gt;/g,"$1").replace(/https?:\/\/(?:(?!&lt;|&gt;)[^\s<>"'])+/g,m=>{const[u,t]=linkTrim(m);return `<a href="${u}" target="_blank" rel="noopener noreferrer" style="color:#7dbd7d">${linkHost(u)}</a>${t}`;});
 function timeStr(){const m=S.timeIdx*15;return`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
 
 // ── Wake Lock ──

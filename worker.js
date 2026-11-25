@@ -44,7 +44,7 @@ export default {
 
     const body = await request.json();
 
-    return handleClaude(body, env);
+    return handleClaude(body, env, request.headers.get("Origin") || "");
   },
 };
 
@@ -97,10 +97,19 @@ async function handleSyncLink(request, env) {
 const CLAUDE_MODEL = "claude-sonnet-4-6";
 const MAX_CONTINUATIONS = 3; // extra requests allowed when the API pauses a long search turn
 const MAX_SOURCES = 5;
+const MAX_TOKENS_CAP = 4000; // the page sends 2500; stops anyone asking for more
+// Web search is only switched on for the chat screens, and only from the live page.
+// The main venue search ("garyland-search") must return bare JSON, so it never gets the tool.
+const WEB_SEARCH_ORIGINS = ["https://iamgaryjbrown-coder.github.io"];
+function wantsWebSearch(sessionId, origin) {
+  if (!WEB_SEARCH_ORIGINS.includes(origin)) return false;
+  return sessionId === "garyland-chat" || (typeof sessionId === "string" && sessionId.startsWith("venue-"));
+}
 const WEB_SEARCH_TOOL = {
   type: "web_search_20260209",
   name: "web_search",
   max_uses: 5,
+  allowed_callers: ["direct"], // plain search: no code-execution container to carry across pause_turn
   user_location: { type: "approximate", country: "GB" },
 };
 
@@ -120,11 +129,12 @@ function chatReply(text) {
   return corsJson({ content: [{ type: "text", text }], role: "assistant" });
 }
 
-async function handleClaude(body, env) {
+async function handleClaude(body, env, origin = "") {
   const messages = Array.isArray(body.messages) ? body.messages.slice() : [];
   const pageSystem = typeof body.system === "string" ? body.system : "";
-  const system = (pageSystem ? pageSystem + "\n\n" : "") + webSearchNote();
-  const max_tokens = body.max_tokens || 2500;
+  const search = wantsWebSearch(body.sessionId, origin);
+  const system = search ? (pageSystem ? pageSystem + "\n\n" : "") + webSearchNote() : pageSystem;
+  const max_tokens = Math.min(Math.max(parseInt(body.max_tokens, 10) || 2500, 1), MAX_TOKENS_CAP);
 
   const content = []; // assistant content gathered across pause_turn rounds
   let data = null;
@@ -141,13 +151,10 @@ async function handleClaude(body, env) {
           "x-api-key": env.ANTHROPIC_KEY,
           "anthropic-version": "2023-06-01",
         },
-        body: JSON.stringify({
-          model: CLAUDE_MODEL,
-          max_tokens: max_tokens,
-          system: system,
-          messages: reqMessages,
-          tools: [WEB_SEARCH_TOOL],
-        }),
+        body: JSON.stringify(Object.assign(
+          { model: CLAUDE_MODEL, max_tokens: max_tokens, system: system, messages: reqMessages },
+          search ? { tools: [WEB_SEARCH_TOOL] } : {}
+        )),
       });
     } catch (err) {
       return chatReply("Claude fetch error: " + String(err));
@@ -175,10 +182,26 @@ async function handleClaude(body, env) {
   return chatReply(buildReplyText(content, data && data.stop_reason));
 }
 
-// Text blocks, joined with "" (citations split one sentence into several blocks),
-// then a short Sources list from the citations.
+// Text blocks: adjacent ones joined with "" (citations split one sentence into
+// several blocks); a paragraph break where a search sat between them.
+// Then a short Sources list from the citations.
+function joinText(content) {
+  let out = "";
+  let gap = false;
+  for (const b of content) {
+    if (b.type !== "text") { gap = true; continue; }
+    const t = b.text || "";
+    if (gap && out.trim() && t.trim()) out = out.replace(/\s+$/, "") + "\n\n" + t.replace(/^\s+/, "");
+    else out += t;
+    gap = false;
+  }
+  return out.trim();
+}
+
+const EMPTY_REPLY = "Sorry, I couldn't finish that answer. Try asking again?";
+
 function buildReplyText(content, stopReason) {
-  let text = content.filter(b => b.type === "text").map(b => b.text || "").join("").trim();
+  let text = joinText(content);
 
   const searchErrors = content
     .filter(b => b.type === "web_search_tool_result" && b.content && !Array.isArray(b.content))
@@ -187,7 +210,7 @@ function buildReplyText(content, stopReason) {
   if (!text) {
     if (stopReason === "pause_turn") return "That search took too long. Try asking again?";
     if (searchErrors.length) return "Live search isn't working right now (" + searchErrors[0] + "). Try again in a minute?";
-    return "";
+    return EMPTY_REPLY;
   }
 
   if (stopReason === "max_tokens") text += "\n\n(Reply cut short.)";
