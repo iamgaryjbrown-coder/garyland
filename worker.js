@@ -1,4 +1,4 @@
-// GaryLand API Proxy — Cloudflare Worker (v6: direct Anthropic, no OpenClaw)
+// GaryLand API Proxy — Cloudflare Worker (v7: direct Anthropic + web search)
 // Secrets: ANTHROPIC_KEY (set via wrangler secret put)
 // KV: FAVS namespace bound in wrangler.toml
 export default {
@@ -92,47 +92,132 @@ async function handleSyncLink(request, env) {
 }
 
 // ═══════════════════════════════════════
-// Chat: direct Anthropic
+// Chat: direct Anthropic, with live web search
 // ═══════════════════════════════════════
-async function handleClaude(body, env) {
-  const messages = body.messages || [];
-  const system = body.system || "";
-  const max_tokens = body.max_tokens || 1024;
+const CLAUDE_MODEL = "claude-sonnet-4-6";
+const MAX_CONTINUATIONS = 3; // extra requests allowed when the API pauses a long search turn
+const MAX_SOURCES = 5;
+const WEB_SEARCH_TOOL = {
+  type: "web_search_20260209",
+  name: "web_search",
+  max_uses: 5,
+  user_location: { type: "approximate", country: "GB" },
+};
 
-  let resp;
-  try {
-    resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": env.ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: max_tokens,
-        system: system,
-        messages: messages,
-      }),
-    });
-  } catch (err) {
-    return corsJson({
-      content: [{ type: "text", text: "Claude fetch error: " + String(err) }],
-      role: "assistant",
-    });
-  }
+// Added to every system prompt the page sends, so the fix needs only a Worker deploy.
+function webSearchNote(now = new Date()) {
+  const today = now.toLocaleDateString("en-GB", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London",
+  });
+  return "Today is " + today + " (UK time). You have a web_search tool, so you can look things up on the internet. " +
+    "Use it whenever the answer depends on live or changeable facts: opening hours, menus and prices, booking and availability, " +
+    "events, recent reviews, or whether a place is still trading. If the user asks you to look something up, search; never say you cannot. " +
+    "When you used a search, say so briefly (for example \"I looked this up:\") and add one short line that hours and menus can change, " +
+    "so it is worth checking with the venue before going. Do not write URLs yourself; the app adds the sources.";
+}
 
-  const data = await resp.json();
-
-  if (data.error) {
-    return corsJson({
-      content: [{ type: "text", text: "Error: " + (data.error.message || JSON.stringify(data.error)) }],
-      role: "assistant",
-    });
-  }
-
-  const text = data.content?.filter(b => b.type === "text").map(b => b.text).join("\n") || "";
+function chatReply(text) {
   return corsJson({ content: [{ type: "text", text }], role: "assistant" });
+}
+
+async function handleClaude(body, env) {
+  const messages = Array.isArray(body.messages) ? body.messages.slice() : [];
+  const pageSystem = typeof body.system === "string" ? body.system : "";
+  const system = (pageSystem ? pageSystem + "\n\n" : "") + webSearchNote();
+  const max_tokens = body.max_tokens || 2500;
+
+  const content = []; // assistant content gathered across pause_turn rounds
+  let data = null;
+
+  for (let round = 0; round <= MAX_CONTINUATIONS; round++) {
+    // After a pause, re-send with the partial assistant turn last; the API resumes it.
+    const reqMessages = content.length ? messages.concat([{ role: "assistant", content }]) : messages;
+    let resp;
+    try {
+      resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": env.ANTHROPIC_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: CLAUDE_MODEL,
+          max_tokens: max_tokens,
+          system: system,
+          messages: reqMessages,
+          tools: [WEB_SEARCH_TOOL],
+        }),
+      });
+    } catch (err) {
+      return chatReply("Claude fetch error: " + String(err));
+    }
+
+    try {
+      data = await resp.json();
+    } catch (err) {
+      return chatReply("Error: Claude returned an unreadable reply (HTTP " + resp.status + ").");
+    }
+
+    if (data.error || !resp.ok) {
+      const e = data.error || {};
+      return chatReply("Error: " + (e.message || JSON.stringify(data.error || data) || ("HTTP " + resp.status)));
+    }
+
+    if (data.stop_reason === "refusal") {
+      return chatReply("Sorry, I can't help with that one.");
+    }
+
+    if (Array.isArray(data.content)) content.push(...data.content);
+    if (data.stop_reason !== "pause_turn") break;
+  }
+
+  return chatReply(buildReplyText(content, data && data.stop_reason));
+}
+
+// Text blocks, joined with "" (citations split one sentence into several blocks),
+// then a short Sources list from the citations.
+function buildReplyText(content, stopReason) {
+  let text = content.filter(b => b.type === "text").map(b => b.text || "").join("").trim();
+
+  const searchErrors = content
+    .filter(b => b.type === "web_search_tool_result" && b.content && !Array.isArray(b.content))
+    .map(b => b.content.error_code || "unknown");
+
+  if (!text) {
+    if (stopReason === "pause_turn") return "That search took too long. Try asking again?";
+    if (searchErrors.length) return "Live search isn't working right now (" + searchErrors[0] + "). Try again in a minute?";
+    return "";
+  }
+
+  if (stopReason === "max_tokens") text += "\n\n(Reply cut short.)";
+  if (stopReason === "pause_turn") text += "\n\n(Search ran long, so this may be incomplete.)";
+
+  const sources = collectSources(content);
+  if (sources.length) {
+    text += "\n\nSources:\n" + sources.map(s => s.title + " " + s.url).join("\n");
+  }
+  return text;
+}
+
+function collectSources(content) {
+  const seen = new Set();
+  const out = [];
+  for (const b of content) {
+    if (b.type !== "text" || !Array.isArray(b.citations)) continue;
+    for (const c of b.citations) {
+      const url = c && c.url;
+      if (!url || !/^https?:\/\//i.test(url) || seen.has(url)) continue;
+      seen.add(url);
+      // Braces stripped so a source title can't break the Go Rogue JSON detector.
+      let title = String(c.title || "").replace(/[{}\s]+/g, " ").trim();
+      if (!title) { try { title = new URL(url).hostname; } catch (e) { title = "Link"; } }
+      if (title.length > 70) title = title.slice(0, 67) + "...";
+      out.push({ title, url });
+      if (out.length >= MAX_SOURCES) return out;
+    }
+  }
+  return out;
 }
 
 // ═══════════════════════════════════════

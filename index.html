@@ -545,6 +545,9 @@ const app=document.getElementById("app");
 const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const escBr=s=>esc(s).replace(/\n/g,"<br>");
 const stripMd=s=>(s||"").replace(/\*\*/g,"").replace(/\*/g,"").replace(/^#+\s/gm,"").replace(/^[-*]\s/gm,"• ");
+// Bot replies: escape, keep line breaks, and turn web links (the Worker's Sources list) into tappable links showing the site name.
+const linkHost=u=>{try{return new URL(u.replace(/&amp;/g,"&")).hostname.replace(/^www\./,"");}catch(e){return "link";}};
+const botHtml=s=>escBr(stripMd(s)).replace(/https?:\/\/[^\s<>"']+/g,m=>{const t=(m.match(/[).,;:!?]+$/)||[""])[0];const u=t?m.slice(0,-t.length):m;return `<a href="${u}" target="_blank" rel="noopener noreferrer" style="color:#7dbd7d">${linkHost(u)}</a>${t}`;});
 function timeStr(){const m=S.timeIdx*15;return`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
 
 // ── Wake Lock ──
@@ -1324,7 +1327,7 @@ function renderLightbox(){
 function renderChat(){
   const p=S.chatPlace;if(!p){S.screen=S.results?"results":"welcome";render();return;}
   let mh=S.chatMsgs.length===0?`<p class="chat-empty">Ask me anything about ${esc(p.name)}...</p>`
-    :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
+    :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):botHtml(m.content)}</div>`).join("");
   if(S.chatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
   app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="cs"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChat()"><button class="btn active" style="flex-shrink:0" onclick="sendChat()" ${S.chatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("cs");if(sc)sc.scrollTop=sc.scrollHeight;
@@ -1358,7 +1361,7 @@ function openChatFromRogue(i){
 function renderChatFromRogue(){
   const p=S.chatPlace;if(!p){closeRogueVenueChat();return;}
   let mh=S.chatMsgs.length===0?`<p class="chat-empty">Ask me anything about ${esc(p.name)}...</p>`
-    :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):escBr(stripMd(m.content))}</div>`).join("");
+    :S.chatMsgs.map(m=>`<div class="chat-bubble ${m.role==="user"?"chat-user":"chat-bot"}">${m.role==="user"?escBr(m.content):botHtml(m.content)}</div>`).join("");
   if(S.chatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
   app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>${esc(p.name)}</h3><p>${esc(p.address)}</p></div><button class="chat-close" onclick="closeRogueVenueChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="cs"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="ci" placeholder="Ask about this place..." onkeydown="if(event.key==='Enter')sendChatFromRogue()"><button class="btn active" style="flex-shrink:0" onclick="sendChatFromRogue()" ${S.chatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("cs");if(sc)sc.scrollTop=sc.scrollHeight;
@@ -1474,7 +1477,7 @@ function renderRogueChat(){
   chatPlaces=[];chatCardPhotos={};chatVenueOffset=0;
   let firstVenueBlock=true;
   let mh=rogueChatHistory.length===0?`<p class="chat-empty">Ask me anything — pubs, restaurants, days out, what to do when it rains...</p>`
-    :rogueChatHistory.slice(rogueSessionStart).map(m=>{if(m.role==="user")return`<div class="chat-bubble chat-user">${escBr(m.content)}</div>`;const v=tryParseVenues(m.content);if(v){const before=m.content.substring(0,m.content.indexOf('{'));const html=renderChatVenues(v.places,before,firstVenueBlock);firstVenueBlock=false;return html;}return`<div class="chat-bubble chat-bot">${escBr(stripMd(m.content))}</div>`;}).join("");
+    :rogueChatHistory.slice(rogueSessionStart).map(m=>{if(m.role==="user")return`<div class="chat-bubble chat-user">${escBr(m.content)}</div>`;const v=tryParseVenues(m.content);if(v){const before=m.content.substring(0,m.content.indexOf('{'));const html=renderChatVenues(v.places,before,firstVenueBlock);firstVenueBlock=false;return html;}return`<div class="chat-bubble chat-bot">${botHtml(m.content)}</div>`;}).join("");
   if(S.rogueChatLoading)mh+=`<p style="color:#5a5548;font-size:12px;font-style:italic">Thinking...</p>`;
   app.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;background:#000"><div class="chat-header"><div style="min-width:0;flex:1"><h3>🏴‍☠️ Go Rogue</h3></div><button class="chat-close" onclick="closeRogueChat()">✕</button></div><div style="flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none" id="scm"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%"><div style="flex:1"></div>${mh}</div><div style="position:sticky;bottom:0;padding:12px 16px;background:#000;border-top:1px solid #2a2826;display:flex;gap:8px"><input class="input" style="flex:1;min-width:0;width:0" id="sci" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendRogueChat()"><button class="btn active" style="flex-shrink:0" onclick="sendRogueChat()" ${S.rogueChatLoading?"disabled":""}>→</button></div></div></div>`;
   const sc=document.getElementById("scm");
